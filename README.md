@@ -32,6 +32,11 @@ sim/         Headless balance simulator (writes CSV to sim/out/)
 tests/       Vitest unit tests
 ```
 
+## Credits
+
+- Icons from [game-icons.net](https://game-icons.net) by Lorc, Delapouite and contributors, licensed [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). Only the icons listed in `scripts/build-icons.ts` are bundled; run `npm run icons` after adding one.
+- Fonts: [Cinzel](https://fonts.google.com/specimen/Cinzel) and [EB Garamond](https://fonts.google.com/specimen/EB+Garamond), SIL Open Font License, via Fontsource.
+
 ## Conventions
 
 - `engine/` and `systems/` never touch the DOM, so tests and the simulator run them directly.

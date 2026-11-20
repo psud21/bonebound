@@ -4,6 +4,7 @@
   import { catchSoul } from '../systems/events';
   import { refresh } from './frame.svelte';
   import { toast } from './feedback.svelte';
+  import Icon from './Icon.svelte';
 
   let { runtime, soul }: { runtime: GameRuntime; soul: SoulState | null } = $props();
 
@@ -24,6 +25,6 @@
     aria-label="Catch the Wandering Soul"
     data-testid="soul"
   >
-    <span aria-hidden="true">✦</span>
+    <Icon name="soul" size={34} />
   </button>
 {/if}

@@ -1,5 +1,8 @@
+import type { IconName } from '../ui/icons.generated';
+
 export interface GraveworksDef {
   id: string;
+  icon: IconName;
   name: string;
   description: string;
   baseCost: number;
@@ -15,6 +18,7 @@ export interface GraveworksDef {
 export const GRAVEWORKS: readonly GraveworksDef[] = [
   {
     id: 'shallowGraves',
+    icon: 'hasty-grave',
     name: 'Shallow Graves',
     description: 'Dig. Find bones. Repeat.',
     baseCost: 30,
@@ -25,6 +29,7 @@ export const GRAVEWORKS: readonly GraveworksDef[] = [
   },
   {
     id: 'embalmingPit',
+    icon: 'mummy-head',
     name: 'Embalming Pit',
     description: 'Preserves the good bits.',
     baseCost: 600,
@@ -35,6 +40,7 @@ export const GRAVEWORKS: readonly GraveworksDef[] = [
   },
   {
     id: 'ossuary',
+    icon: 'skull-crossed-bones',
     name: 'Ossuary',
     description: 'Bones, sorted by size, then by attitude.',
     baseCost: 12_000,
@@ -45,6 +51,7 @@ export const GRAVEWORKS: readonly GraveworksDef[] = [
   },
   {
     id: 'bloodFountain',
+    icon: 'chalice-drops',
     name: 'Blood Fountain',
     description: 'It never runs dry. Nobody checks why.',
     baseCost: 250_000,

@@ -15,5 +15,5 @@
     "resolveJsonModule": true,
     "noEmit": true
   },
-  "include": ["src/**/*.ts", "src/**/*.svelte", "sim/**/*.ts", "tests/**/*.ts", "vite.config.ts"]
+  "include": ["scripts/**/*.ts", "src/**/*.ts", "src/**/*.svelte", "sim/**/*.ts", "tests/**/*.ts", "vite.config.ts"]
 }

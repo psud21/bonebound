@@ -56,5 +56,6 @@ export function armyDps(state: GameState, vsBoss = false): Decimal {
 
 /** A minion is shown once the player has earned a fraction of its price, or owns one. */
 export function minionVisible(state: GameState, id: string): boolean {
+  if (MINIONS[0]?.id === id) return true; // the first minion is always on offer
   return ownedCount(state, id) > 0 || state.stats.lifetimeBones.gte(def(id).baseCost * 0.4);
 }

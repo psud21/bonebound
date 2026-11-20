@@ -1,5 +1,8 @@
+import type { IconName } from '../ui/icons.generated';
+
 export interface MinionDef {
   id: string;
+  icon: IconName;
   name: string;
   description: string;
   /** Price of the first unit, in Bones. */
@@ -17,6 +20,7 @@ export interface MinionDef {
 export const MINIONS: readonly MinionDef[] = [
   {
     id: 'skeletonWarrior',
+    icon: 'skeleton',
     name: 'Skeleton Warrior',
     description: 'Cheap, plentiful, and not very bright.',
     baseCost: 10,
@@ -25,6 +29,7 @@ export const MINIONS: readonly MinionDef[] = [
   },
   {
     id: 'skeletalArcher',
+    icon: 'bowman',
     name: 'Skeletal Archer',
     description: 'Fires splinters of its own ribcage.',
     baseCost: 120,
@@ -35,6 +40,7 @@ export const MINIONS: readonly MinionDef[] = [
   },
   {
     id: 'ghoul',
+    icon: 'shambling-zombie',
     name: 'Ghoul',
     description: 'Always hungry. Never full.',
     baseCost: 1_500,
@@ -43,6 +49,7 @@ export const MINIONS: readonly MinionDef[] = [
   },
   {
     id: 'boneMage',
+    icon: 'skull-staff',
     name: 'Bone Mage',
     description: 'A scholar who never let death interrupt their studies.',
     baseCost: 25_000,
@@ -51,6 +58,7 @@ export const MINIONS: readonly MinionDef[] = [
   },
   {
     id: 'wraith',
+    icon: 'spectre',
     name: 'Wraith',
     description: 'A cold draft with a grudge.',
     baseCost: 450_000,
@@ -59,6 +67,7 @@ export const MINIONS: readonly MinionDef[] = [
   },
   {
     id: 'abomination',
+    icon: 'frankenstein-creature',
     name: 'Abomination',
     description: 'Several bad decisions, stitched together.',
     baseCost: 9_000_000,

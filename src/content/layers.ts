@@ -1,11 +1,20 @@
+import type { IconName } from '../ui/icons.generated';
+
+export interface Foe {
+  name: string;
+  icon: IconName;
+}
+
 export interface LayerDef {
   id: string;
   name: string;
   /** First floor of this layer (inclusive). */
   fromFloor: number;
-  enemies: readonly string[];
-  /** Named bosses by floor. Unlisted boss floors use a generic name. */
-  bosses: Readonly<Record<number, string>>;
+  /** Last floor of this layer (inclusive), or null if endless. */
+  toFloor: number | null;
+  enemies: readonly Foe[];
+  /** Named bosses by floor. Unlisted boss floors use a generic guardian. */
+  bosses: Readonly<Record<number, Foe>>;
 }
 
 export const LAYERS: readonly LayerDef[] = [
@@ -13,27 +22,28 @@ export const LAYERS: readonly LayerDef[] = [
     id: 'ossuaryCrypts',
     name: 'The Ossuary Crypts',
     fromFloor: 1,
+    toFloor: 100,
     enemies: [
-      'Crypt Rat',
-      'Grave Beetle',
-      'Restless Corpse',
-      'Cultist Acolyte',
-      'Bone Hound',
-      'Tomb Spider',
-      'Candle Wight',
-      'Fallen Templar',
+      { name: 'Crypt Rat', icon: 'rat' },
+      { name: 'Grave Beetle', icon: 'beetle-shell' },
+      { name: 'Restless Corpse', icon: 'raise-zombie' },
+      { name: 'Cultist Acolyte', icon: 'cultist' },
+      { name: 'Bone Hound', icon: 'hound' },
+      { name: 'Tomb Spider', icon: 'hanging-spider' },
+      { name: 'Candle Wight', icon: 'candle-skull' },
+      { name: 'Fallen Templar', icon: 'black-knight-helm' },
     ],
     bosses: {
-      10: 'Gravekeeper Morrow',
-      20: 'The Rat Matriarch',
-      30: 'Sister Ashgrove',
-      40: 'The Hollow Choir',
-      50: 'Brother Ossian, the Unburied',
-      60: 'The Weeping Effigy',
-      70: 'Inquisitor Vale',
-      80: 'The Carrion Bishop',
-      90: 'Mother of Candles',
-      100: 'The Sealed Warden',
+      10: { name: 'Gravekeeper Morrow', icon: 'grim-reaper' },
+      20: { name: 'The Rat Matriarch', icon: 'rat' },
+      30: { name: 'Sister Ashgrove', icon: 'nun-face' },
+      40: { name: 'The Hollow Choir', icon: 'screaming' },
+      50: { name: 'Brother Ossian, the Unburied', icon: 'death-skull' },
+      60: { name: 'The Weeping Effigy', icon: 'bleeding-eye' },
+      70: { name: 'Inquisitor Vale', icon: 'templar-shield' },
+      80: { name: 'The Carrion Bishop', icon: 'crow-dive' },
+      90: { name: 'Mother of Candles', icon: 'candlebright' },
+      100: { name: 'The Sealed Warden', icon: 'dungeon-gate' },
     },
   },
   {
@@ -41,7 +51,12 @@ export const LAYERS: readonly LayerDef[] = [
     id: 'uncharted',
     name: 'Uncharted Depths',
     fromFloor: 101,
-    enemies: ['Nameless Thing', 'Drowned Shade', 'Deep Crawler'],
+    toFloor: null,
+    enemies: [
+      { name: 'Nameless Thing', icon: 'tentacles-skull' },
+      { name: 'Drowned Shade', icon: 'ghost' },
+      { name: 'Deep Crawler', icon: 'monster-grasp' },
+    ],
     bosses: {},
   },
 ];
@@ -56,10 +71,17 @@ export function isBossFloor(floor: number): boolean {
   return floor % 10 === 0;
 }
 
-/** Deterministic enemy name for a floor and kill index, so it doesn't flicker on reload. */
-export function enemyName(floor: number, killIndex: number): string {
+export function bossFor(floor: number): Foe {
+  return layerForFloor(floor).bosses[floor] ?? { name: `Guardian of Floor ${floor}`, icon: 'horned-skull' };
+}
+
+/** Deterministic enemy for a floor and kill index, so it doesn't flicker on reload. */
+export function foeFor(floor: number, killIndex: number): Foe {
+  if (isBossFloor(floor)) return bossFor(floor);
   const layer = layerForFloor(floor);
-  if (isBossFloor(floor)) return layer.bosses[floor] ?? `Guardian of Floor ${floor}`;
-  const i = (floor * 7 + killIndex * 3) % layer.enemies.length;
-  return layer.enemies[i]!;
+  return layer.enemies[(floor * 7 + killIndex * 3) % layer.enemies.length]!;
+}
+
+export function enemyName(floor: number, killIndex: number): string {
+  return foeFor(floor, killIndex).name;
 }
