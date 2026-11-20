@@ -15,6 +15,14 @@ export interface MinionDef {
   bossDamageMult?: number;
   /** Short trait text shown in the UI. */
   trait?: string;
+  /** Unaffected by the Ashen Wastes burn. */
+  burnImmune?: boolean;
+  /** Each unit adds this fraction to the damage of every lower-tier minion. */
+  lowerTierBoost?: number;
+  /** Each unit strips this fraction of a guardian's HP when the fight starts (capped). */
+  guardianShred?: number;
+  /** Can't be raised until this floor has been reached in any run. */
+  requiresFloor?: number;
 }
 
 export const MINIONS: readonly MinionDef[] = [
@@ -74,7 +82,55 @@ export const MINIONS: readonly MinionDef[] = [
     costGrowth: 1.12,
     baseDps: 60_000,
   },
+  {
+    id: 'boneGolem',
+    icon: 'rock-golem',
+    name: 'Bone Golem',
+    description: 'A cathedral of femurs that learned to walk.',
+    baseCost: 200_000_000,
+    costGrowth: 1.13,
+    baseDps: 600_000,
+    burnImmune: true,
+    trait: 'Immune to the Ashen Wastes burn.',
+  },
+  {
+    id: 'deathKnight',
+    icon: 'mounted-knight',
+    name: 'Death Knight',
+    description: 'Swore an oath to a king long since dust. Now swears it to you.',
+    baseCost: 5_000_000_000,
+    costGrowth: 1.14,
+    baseDps: 6_000_000,
+    lowerTierBoost: 0.02,
+    trait: 'Each one gives +2% damage to every lower-tier minion.',
+  },
+  {
+    id: 'banshee',
+    icon: 'haunting',
+    name: 'Banshee',
+    description: 'Her scream arrives a moment before you do.',
+    baseCost: 150_000_000_000,
+    costGrowth: 1.15,
+    baseDps: 60_000_000,
+    guardianShred: 0.005,
+    trait: 'Each one strips 0.5% of a guardian’s HP as the fight begins (up to 40%).',
+  },
+  {
+    id: 'dracolich',
+    icon: 'spiked-dragon-head',
+    name: 'Dracolich',
+    description: 'The Drowned King’s bones, rebuilt with wings and a grudge.',
+    baseCost: 5_000_000_000_000,
+    costGrowth: 1.16,
+    baseDps: 700_000_000,
+    bossDamageMult: 2,
+    requiresFloor: 201,
+    trait: 'Double damage against guardians. Raised only after the Drowned King falls.',
+  },
 ];
+
+/** Banshees can strip at most this fraction of a guardian's HP. */
+export const MAX_GUARDIAN_SHRED = 0.4;
 
 export const MINIONS_BY_ID: Readonly<Record<string, MinionDef>> = Object.fromEntries(
   MINIONS.map((m) => [m.id, m]),

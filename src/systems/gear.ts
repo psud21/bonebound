@@ -1,5 +1,5 @@
 import type { GameState, Item, ItemAffix } from '../engine/state';
-import { LEGENDARIES_BY_ID, RARITY_INFO, STATS_BY_ID, type LegendaryEffect, type Rarity } from '../content/loot';
+import { LEGENDARIES_BY_ID, RARITY_INFO, SETS, STATS_BY_ID, type LegendaryEffect, type Rarity } from '../content/loot';
 
 /** The number an affix contributes, e.g. 23 for "+23% minion damage". */
 export function affixValue(affix: ItemAffix, level: number, rarity: Rarity): number {
@@ -34,6 +34,8 @@ export function itemScore(item: Item): number {
   let score = 0;
   for (const [stat, value] of Object.entries(itemStats(item))) score += value * (STATS_BY_ID[stat]?.weight ?? 0);
   if (item.legendary) score += 40 + item.level;
+  // Set pieces are worth more than their stats, because of the set bonuses.
+  if (item.set) score += 25 + item.level * 0.5;
   return score;
 }
 
@@ -64,7 +66,21 @@ export function gearStat(state: GameState, stat: string): number {
   return gearStats(state)[stat] ?? 0;
 }
 
-/** Legendary powers on equipped gear. */
+/** Pieces of each set currently worn. */
+export function setCounts(state: GameState): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const item of Object.values(state.loot.equipped)) {
+    if (item?.set) counts[item.set] = (counts[item.set] ?? 0) + 1;
+  }
+  return counts;
+}
+
+/** Most pieces of any single set worn. */
+export function maxSetPieces(state: GameState): number {
+  return Math.max(0, ...Object.values(setCounts(state)));
+}
+
+/** Legendary powers and active set bonuses on equipped gear. */
 export function legendaryEffects(state: GameState): LegendaryEffect[] {
   const eq = state.loot.equipped;
   let cached = legendaryCache.get(eq);
@@ -73,6 +89,10 @@ export function legendaryEffects(state: GameState): LegendaryEffect[] {
     for (const item of Object.values(eq)) {
       const def = item?.legendary ? LEGENDARIES_BY_ID[item.legendary] : undefined;
       if (def) cached.push(def.effect);
+    }
+    const counts = setCounts(state);
+    for (const set of SETS) {
+      for (const bonus of set.bonuses) if ((counts[set.id] ?? 0) >= bonus.pieces) cached.push(...bonus.effects);
     }
     legendaryCache.set(eq, cached);
   }

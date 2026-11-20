@@ -6,6 +6,7 @@ import { PACT_BY_ID, PRESTIGE, shardsForFloor, type PactEffect } from '../conten
 import { buyMinion, minionVisible, purchaseCost, unitDps } from './army';
 import { enterFloor } from './descent';
 import { addLog } from './log';
+import { researchEffects, researchProduct } from './library';
 
 export function hasPact(state: GameState, id: string): boolean {
   return state.prestige.pact.includes(id);
@@ -26,8 +27,13 @@ export function shardMultiplier(state: GameState): number {
   return 1 + (perShard / 100) * state.prestige.shardsEarned;
 }
 
+/** Multiplier on Soul Shards gained from Rebirth. */
+export function shardGainMultiplier(state: GameState): number {
+  return pactEffects(state, 'shardGain').reduce((m, e) => m * e.mult, 1) * researchProduct(state, 'shards');
+}
+
 export function pendingShards(state: GameState): number {
-  return shardsForFloor(state.descent.maxFloor);
+  return Math.floor(shardsForFloor(state.descent.maxFloor) * shardGainMultiplier(state));
 }
 
 export function canRebirth(state: GameState): boolean {
@@ -52,7 +58,11 @@ export function buyPact(state: GameState, id: string): boolean {
 }
 
 export function offlineCapSeconds(state: GameState): number {
-  return BALANCE.BASE_OFFLINE_CAP_SECONDS + pactEffects(state, 'offlineCap').reduce((s, e) => s + e.seconds, 0);
+  return (
+    BALANCE.BASE_OFFLINE_CAP_SECONDS +
+    pactEffects(state, 'offlineCap').reduce((s, e) => s + e.seconds, 0) +
+    researchEffects(state, 'offlineCap').reduce((s, e) => s + e.seconds, 0)
+  );
 }
 
 /** Applies Dark Pact head starts to a fresh run. */
@@ -72,6 +82,7 @@ export function applyRunStart(state: GameState): void {
       if (entry) entry.owned = Math.max(entry.owned, count);
     }
   }
+  for (const e of pactEffects(state, 'startCorpses')) state.resources.corpses += e.amount;
   const startFloor = Math.max(1, ...pactEffects(state, 'startFloor').map((e) => e.floor));
   if (startFloor > 1) enterFloor(state, startFloor);
 }
@@ -87,6 +98,8 @@ export function rebirth(state: GameState, now: number = Date.now()): number {
   const depth = state.descent.maxFloor;
   const keepWardens = pactEffects(state, 'keepWardens').length > 0;
   const wardens = Object.fromEntries(Object.entries(state.crypt.graveworks).map(([id, g]) => [id, g.warden]));
+  const keepElites = Math.max(0, ...pactEffects(state, 'keepElites').map((e) => e.fraction));
+  const elites = Object.fromEntries(Object.entries(state.army.elites).map(([id, lvl]) => [id, Math.floor(lvl * keepElites)]));
 
   const fresh = createInitialState(now, state.rng.state);
   state.resources = fresh.resources;
@@ -95,7 +108,9 @@ export function rebirth(state: GameState, now: number = Date.now()): number {
   state.upgrades = fresh.upgrades;
   state.descent = fresh.descent;
   state.events = fresh.events;
+  state.army.elites = { ...state.army.elites, ...elites };
   state.magic = { ...state.magic, essence: 0, cooldowns: {} };
+  state.prestige.coven = null;
   if (keepWardens) {
     for (const [id, had] of Object.entries(wardens)) {
       const entry = state.crypt.graveworks[id];

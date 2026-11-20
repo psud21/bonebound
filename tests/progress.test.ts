@@ -37,9 +37,12 @@ describe('progress previews', () => {
   it('previews the next two locked minions by name and hides the rest', () => {
     const s = createInitialState(0, 1);
     const statuses = buildView(s).minions.map((m) => m.status);
-    expect(statuses).toEqual(['open', 'preview', 'preview', 'hidden', 'hidden', 'hidden']);
-    s.stats.lifetimeBones = D(1e9);
-    expect(buildView(s).minions.every((m) => m.status === 'open')).toBe(true);
+    expect(statuses).toEqual(['open', 'preview', 'preview', 'hidden', 'hidden', 'hidden', 'hidden', 'hidden', 'hidden', 'hidden']);
+    s.stats.lifetimeBones = D(1e14);
+    // Everything opens except the Dracolich, which waits for the Drowned King.
+    const after = buildView(s).minions;
+    expect(after.filter((m) => m.status === 'open')).toHaveLength(9);
+    expect(after.find((m) => m.id === 'dracolich')?.status).not.toBe('open');
   });
 
   it('builds a depth track with ten guardians for Layer 1', () => {

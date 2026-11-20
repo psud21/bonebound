@@ -5,6 +5,18 @@ export interface Foe {
   icon: IconName;
 }
 
+/** Each layer of the Abyss bends the rules in one way. */
+export type LayerModifier =
+  | { kind: 'none' }
+  /** Enemies heal this percent of their max HP per second (guardians heal `guardianPercent`). */
+  | { kind: 'regen'; percent: number; guardianPercent: number }
+  /** Minions deal this percent less damage (burn-immune minions are spared). */
+  | { kind: 'burn'; percent: number }
+  /** The army attacks this percent slower. Siphon and spells are unaffected. */
+  | { kind: 'slow'; percent: number };
+
+export type LayerHazard = Exclude<LayerModifier['kind'], 'none'>;
+
 export interface LayerDef {
   id: string;
   name: string;
@@ -12,6 +24,9 @@ export interface LayerDef {
   fromFloor: number;
   /** Last floor of this layer (inclusive), or null if endless. */
   toFloor: number | null;
+  modifier: LayerModifier;
+  /** One line describing the modifier, for the Descent panel. */
+  hazard: string;
   enemies: readonly Foe[];
   /** Named bosses by floor. Unlisted boss floors use a generic guardian. */
   bosses: Readonly<Record<number, Foe>>;
@@ -23,6 +38,8 @@ export const LAYERS: readonly LayerDef[] = [
     name: 'The Ossuary Crypts',
     fromFloor: 1,
     toFloor: 100,
+    modifier: { kind: 'none' },
+    hazard: '',
     enemies: [
       { name: 'Crypt Rat', icon: 'rat' },
       { name: 'Grave Beetle', icon: 'beetle-shell' },
@@ -47,14 +64,106 @@ export const LAYERS: readonly LayerDef[] = [
     },
   },
   {
-    // Placeholder until Layer 2 content arrives in M3.
+    id: 'drownedCatacombs',
+    name: 'The Drowned Catacombs',
+    fromFloor: 101,
+    toFloor: 200,
+    modifier: { kind: 'regen', percent: 4, guardianPercent: 1 },
+    hazard: 'The drowned knit themselves back together: enemies heal 4% of their HP each second (guardians 1%).',
+    enemies: [
+      { name: 'Drowned Thrall', icon: 'drowning' },
+      { name: 'Bloated Corpse', icon: 'fish-corpse' },
+      { name: 'Grave Eel', icon: 'eel' },
+      { name: 'Tide Wraith', icon: 'ghost' },
+      { name: 'Barnacle Knight', icon: 'crab' },
+      { name: 'Leechling', icon: 'leeching-worm' },
+      { name: 'Kraken Spawn', icon: 'kraken-tentacle' },
+      { name: 'Angler Horror', icon: 'angler-fish' },
+    ],
+    bosses: {
+      110: { name: 'Abbess Mire', icon: 'hooded-figure' },
+      120: { name: 'The Leech Sovereign', icon: 'worm-mouth' },
+      130: { name: 'Captain Saltbones', icon: 'pirate-skull' },
+      140: { name: 'The Tidebound Choir', icon: 'water-splash' },
+      150: { name: 'Old Grey Mouth', icon: 'fish-monster' },
+      160: { name: 'The Pale Jelly Saint', icon: 'jellyfish' },
+      170: { name: 'The Drowned Cardinal', icon: 'pope-crown' },
+      180: { name: 'Kraken of the Ossuary', icon: 'interlaced-tentacles' },
+      190: { name: 'The Ferryman’s Echo', icon: 'drakkar-dragon' },
+      200: { name: 'The Drowned King', icon: 'sea-dragon' },
+    },
+  },
+  {
+    id: 'ashenWastes',
+    name: 'The Ashen Wastes',
+    fromFloor: 201,
+    toFloor: 300,
+    modifier: { kind: 'burn', percent: 35 },
+    hazard: 'The air burns: minions deal 35% less damage. Bone Golems don’t mind.',
+    enemies: [
+      { name: 'Cinder Imp', icon: 'imp' },
+      { name: 'Ash Wight', icon: 'burning-skull' },
+      { name: 'Ember Hound', icon: 'direwolf' },
+      { name: 'Pyre Cultist', icon: 'fire-silhouette' },
+      { name: 'Slag Golem', icon: 'golem-head' },
+      { name: 'Burning Martyr', icon: 'burning-eye' },
+      { name: 'Fire Bat', icon: 'evil-bat' },
+      { name: 'Flame Templar', icon: 'fire-shield' },
+    ],
+    bosses: {
+      210: { name: 'The Pyre Abbot', icon: 'fire-shrine' },
+      220: { name: 'Mother Cinder', icon: 'witch-face' },
+      230: { name: 'The Ash Colossus', icon: 'metal-golem-head' },
+      240: { name: 'Inquisitor Brand', icon: 'flamethrower-soldier' },
+      250: { name: 'The Burning Choir', icon: 'fire-wave' },
+      260: { name: 'Saint Ember', icon: 'fire-iris' },
+      270: { name: 'The Slag Dragon', icon: 'dragon-breath' },
+      280: { name: 'Lord of Cinders', icon: 'burning-meteor' },
+      290: { name: 'The Incense Beast', icon: 'fire-breath' },
+      300: { name: 'The Furnace Throne', icon: 'fire-bowl' },
+    },
+  },
+  {
+    id: 'weepingGlacier',
+    name: 'The Weeping Glacier',
+    fromFloor: 301,
+    toFloor: 400,
+    modifier: { kind: 'slow', percent: 30 },
+    hazard: 'The cold seeps into old joints: the army attacks 30% slower. Siphon and spells are unaffected.',
+    enemies: [
+      { name: 'Frost Wight', icon: 'frozen-body' },
+      { name: 'Ice Golem', icon: 'ice-golem' },
+      { name: 'Rime Wolf', icon: 'wolf-head' },
+      { name: 'Glacier Owl', icon: 'barn-owl' },
+      { name: 'Pale Bear', icon: 'polar-bear' },
+      { name: 'Shard Elemental', icon: 'ice-bolt' },
+      { name: 'Entombed Dead', icon: 'frozen-block' },
+      { name: 'Snow Wraith', icon: 'snowing' },
+    ],
+    bosses: {
+      310: { name: 'Sister Rime', icon: 'frozen-orb' },
+      320: { name: 'The Pale Bear', icon: 'polar-bear' },
+      330: { name: 'The Frostfire Seer', icon: 'frostfire' },
+      340: { name: 'The Entombed Legion', icon: 'frozen-block' },
+      350: { name: 'Saint of Tears', icon: 'tension-snowflake' },
+      360: { name: 'The Hollow Mammoth', icon: 'mammoth' },
+      370: { name: 'The Ice Iris', icon: 'ice-iris' },
+      380: { name: 'Queen of Icicles', icon: 'queen-crown' },
+      390: { name: 'Huntmaster Sleet', icon: 'frozen-arrow' },
+      400: { name: 'The Weeping Heart', icon: 'cold-heart' },
+    },
+  },
+  {
+    // Placeholder until Layer 5 arrives in M4.
     id: 'uncharted',
     name: 'Uncharted Depths',
-    fromFloor: 101,
+    fromFloor: 401,
     toFloor: null,
+    modifier: { kind: 'none' },
+    hazard: '',
     enemies: [
       { name: 'Nameless Thing', icon: 'tentacles-skull' },
-      { name: 'Drowned Shade', icon: 'ghost' },
+      { name: 'Hungering Dark', icon: 'shadow-grasp' },
       { name: 'Deep Crawler', icon: 'monster-grasp' },
     ],
     bosses: {},
@@ -65,6 +174,11 @@ export function layerForFloor(floor: number): LayerDef {
   let current = LAYERS[0]!;
   for (const layer of LAYERS) if (floor >= layer.fromFloor) current = layer;
   return current;
+}
+
+/** 1-based layer number for a floor. */
+export function layerNumber(floor: number): number {
+  return LAYERS.indexOf(layerForFloor(floor)) + 1;
 }
 
 export function isBossFloor(floor: number): boolean {

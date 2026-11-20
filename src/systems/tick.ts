@@ -1,7 +1,9 @@
 import type { GameState } from '../engine/state';
 import { armyDps } from './army';
 import { updateCrypt } from './crypt';
-import { dealDamage, onBossFloor, updateBossTimer } from './descent';
+import { dealDamage, onBossFloor, updateBossTimer, updateRegen } from './descent';
+import { checkFeats } from './feats';
+import { updateLibrary } from './library';
 import { updateEvents } from './events';
 import { updateMagic } from './magic';
 import { autoBuy } from './prestige';
@@ -21,6 +23,8 @@ export function update(state: GameState, dt: number, ctx: TickContext = {}): voi
   if (!offline) state.meta.playTimeSeconds += dt;
 
   updateCrypt(state, dt);
+  updateLibrary(state, dt);
+  updateRegen(state, dt);
 
   const dps = armyDps(state, onBossFloor(state));
   if (dps.gt(0)) dealDamage(state, dps.mul(dt), { floorCap: ctx.floorCap });
@@ -30,4 +34,5 @@ export function update(state: GameState, dt: number, ctx: TickContext = {}): voi
   updateMagic(state, dt);
   autoBuy(state);
   checkUnlocks(state);
+  checkFeats(state);
 }

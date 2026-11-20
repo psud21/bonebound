@@ -3,15 +3,22 @@ import type { GameState } from '../engine/state';
 import { BALANCE } from '../content/balance';
 import { enemyName, isBossFloor } from '../content/layers';
 import { addLog } from './log';
-import { bossTimerSeconds } from './modifiers';
+import { bossTimerSeconds, guardianShred } from './modifiers';
+import { gainCorpses } from './elites';
+import { gainLore, guardianLore, rollTomes } from './library';
+import { regenRate } from './hazards';
 import { chance } from '../engine/rng';
 import { hasLegendary } from './gear';
 import { rollDrops } from './loot';
 import { gainBones } from './resources';
 
-/** HP of a normal enemy on this floor. */
+/** HP of a normal enemy on this floor. Growth slows below the Ossuary Crypts. */
 export function floorBaseHp(floor: number): Decimal {
-  return D(BALANCE.FLOOR_HP_BASE).mul(Decimal.pow(BALANCE.FLOOR_HP_GROWTH, floor));
+  const shallow = Math.min(floor, BALANCE.DEEP_FROM_FLOOR);
+  const deep = Math.max(0, floor - BALANCE.DEEP_FROM_FLOOR);
+  return D(BALANCE.FLOOR_HP_BASE)
+    .mul(Decimal.pow(BALANCE.FLOOR_HP_GROWTH, shallow))
+    .mul(Decimal.pow(BALANCE.DEEP_HP_GROWTH, deep));
 }
 
 /** HP of the enemy (or boss) on this floor. */
@@ -31,7 +38,9 @@ export function bonesPerKill(floor: number): Decimal {
 
 /** Bones earned per point of damage dealt on this floor. */
 export function bonesPerHp(floor: number): number {
-  return BALANCE.BONES_PER_HP * BALANCE.BONES_PER_HP_DECAY ** (floor - 1);
+  const shallow = Math.min(floor, BALANCE.DEEP_FROM_FLOOR) - 1;
+  const deep = Math.max(0, floor - BALANCE.DEEP_FROM_FLOOR);
+  return BALANCE.BONES_PER_HP * BALANCE.BONES_PER_HP_DECAY ** shallow * BALANCE.DEEP_BONES_PER_HP_DECAY ** deep;
 }
 
 /** A boss floor the player hasn't beaten yet (the deepest floor reached is a boss). */
@@ -55,7 +64,23 @@ export function enterFloor(state: GameState, floor: number): void {
   d.enemyHp = enemyMaxHp(d.floor);
   d.maxFloor = Math.max(d.maxFloor, d.floor);
   state.prestige.bestFloor = Math.max(state.prestige.bestFloor, d.maxFloor);
-  if (isBossFloor(d.floor)) d.bossTimeLeft = bossTimerSeconds(state);
+  if (isBossFloor(d.floor)) {
+    d.bossTimeLeft = bossTimerSeconds(state);
+    // Banshees scream first.
+    const shred = guardianShred(state);
+    if (shred > 0) d.enemyHp = d.enemyHp.mul(1 - shred);
+  }
+}
+
+/** Drowned Catacombs: a wounded enemy heals over time. */
+export function updateRegen(state: GameState, dt: number): void {
+  const rate = regenRate(state);
+  if (rate <= 0) return;
+  const d = state.descent;
+  const max = enemyMaxHp(d.floor);
+  if (d.enemyHp.gte(max)) return;
+  const healed = d.enemyHp.add(max.mul(rate * dt));
+  d.enemyHp = healed.gt(max) ? max : healed;
 }
 
 export interface DamageOptions {
@@ -105,11 +130,18 @@ export function dealDamage(state: GameState, amount: Decimal, options: DamageOpt
     state.stats.totalKills += kills;
 
     rollDrops(state, floor, kills, isBossFloor(floor));
+    gainCorpses(state, kills, isBossFloor(floor));
 
     if (isBossFloor(floor)) {
       state.stats.bossesDefeated += kills;
       result.bossesDefeated += kills;
-      if (canAdvance) addLog(state, 'boss', `${enemyName(floor, 0)} has fallen. Floor ${floor} is yours.`);
+      if (canAdvance) {
+        // A guardian's first fall this run leaves Lore behind.
+        if (floor >= d.maxFloor) gainLore(state, guardianLore(floor));
+        addLog(state, 'boss', `${enemyName(floor, 0)} has fallen. Floor ${floor} is yours.`);
+      }
+    } else {
+      rollTomes(state, floor, kills);
     }
 
     if (canAdvance) {

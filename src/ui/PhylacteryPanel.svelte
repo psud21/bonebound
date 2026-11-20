@@ -2,12 +2,14 @@
   import type { GameRuntime } from '../game';
   import type { GameView } from './viewModel';
   import { buyPact, rebirth } from '../systems/prestige';
+  import { chooseCoven } from '../systems/covens';
   import { refresh } from './frame.svelte';
   import { toast } from './feedback.svelte';
   import Icon from './Icon.svelte';
 
   let { runtime, view }: { runtime: GameRuntime; view: GameView } = $props();
   const p = $derived(view.phylactery);
+  const c = $derived(view.covens);
 
   let confirming = $state(false);
 
@@ -18,6 +20,11 @@
       runtime.save();
       toast(`Reborn with ${gained} new Soul Shards.`, 6000);
     }
+    refresh();
+  }
+
+  function onCoven(id: string, name: string) {
+    if (chooseCoven(runtime.state, id)) toast(`You swear yourself to ${name}.`);
     refresh();
   }
 
@@ -52,8 +59,11 @@
       </button>
     {:else}
       <div class="confirm">
-        <p><strong>You lose:</strong> Bones, minions, graveworks, upgrades, floors and Essence.</p>
-        <p><strong>You keep:</strong> relics and Bone Dust, School of Bone levels, Soul Shards, the Dark Pact and your Chronicle.</p>
+        <p><strong>You lose:</strong> Bones, minions, graveworks, upgrades, floors, Essence, Corpses, Elites and your coven.</p>
+        <p>
+          <strong>You keep:</strong> relics and Bone Dust, school levels, Soul Shards, the Dark Pact, Lore and research, feats
+          and your Chronicle.
+        </p>
         <div class="confirm-actions">
           <button class="rebirth-btn" onclick={onRebirth} data-testid="confirm-rebirth">Die and rise again (+{p.gain})</button>
           <button onclick={() => (confirming = false)}>Not yet</button>
@@ -62,6 +72,33 @@
     {/if}
     <p class="muted small">This run: {p.runTime}. Deepest ever: floor {p.bestFloor}.</p>
   </div>
+
+  <h3>Covens</h3>
+  {#if !c.unlocked}
+    <p class="muted small">
+      <Icon name="padlock" size={11} /> Four covens are watching. Perform {c.rebirthsNeeded} Rebirths to swear to one ({p.rebirths} so far).
+    </p>
+  {:else}
+    <p class="muted small">
+      {#if c.swornName}Sworn to <strong>{c.swornName}</strong> until your next death.{:else}Choose one coven for this run. The choice lasts until you Rebirth.{/if}
+    </p>
+    <div class="covens">
+      {#each c.list as cv (cv.id)}
+        <button
+          class="coven"
+          class:chosen={cv.chosen}
+          disabled={!!c.sworn}
+          onclick={() => onCoven(cv.id, cv.name)}
+          data-testid={`coven-${cv.id}`}
+        >
+          <span class="coven-head"><Icon name={cv.icon} size={24} /> <span class="coven-name">{cv.name}</span></span>
+          <span class="coven-motto">{cv.motto}</span>
+          {#each cv.boons as b}<span class="coven-boon">+ {b}</span>{/each}
+          {#each cv.costs as b}<span class="coven-cost">− {b}</span>{/each}
+        </button>
+      {/each}
+    </div>
+  {/if}
 
   <h3>The Dark Pact</h3>
   <div class="pact">

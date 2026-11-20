@@ -5,7 +5,7 @@ export interface UnlockDef {
   id: string;
   /** Short goal name shown in "The Path Ahead". */
   goal: string;
-  condition: Condition | { kind: 'start' } | { kind: 'lifetimeBones'; amount: number };
+  condition: Condition | { kind: 'start' } | { kind: 'lifetimeBones'; amount: number } | { kind: 'rebirths'; count: number };
   text: string;
 }
 
@@ -53,6 +53,12 @@ export const UNLOCKS: readonly UnlockDef[] = [
     text: 'Old liches haunt the crypt, bored and underemployed. For a price, they’ll run your graveworks for you.',
   },
   {
+    id: 'corpses',
+    goal: 'Keep the bodies',
+    condition: { kind: 'maxFloor', floor: 15 },
+    text: 'Some of the fallen are too good to waste. Kills now leave Corpses, and Corpses can raise an Elite: a Grave Champion waits in the Army panel.',
+  },
+  {
     id: 'floor25',
     goal: 'Hear the whisper',
     condition: { kind: 'maxFloor', floor: 25 },
@@ -71,6 +77,12 @@ export const UNLOCKS: readonly UnlockDef[] = [
     text: 'Halfway through the Ossuary Crypts. The walls here are carved with the names of necromancers who came before you. Many names. No exits.',
   },
   {
+    id: 'library',
+    goal: 'Find the Forbidden Library',
+    condition: { kind: 'maxFloor', floor: 60 },
+    text: 'Behind the Weeping Effigy: a library nobody was meant to find. Guardians and tomes yield Lore, and Lore buys research that outlives you. See the Library tab.',
+  },
+  {
     id: 'floor75',
     goal: 'A place to keep your soul',
     condition: { kind: 'maxFloor', floor: 75 },
@@ -86,6 +98,42 @@ export const UNLOCKS: readonly UnlockDef[] = [
     id: 'layerOneCleared',
     goal: 'Break the seal',
     condition: { kind: 'maxFloor', floor: 101 },
-    text: 'The seal is broken. You stand at the edge of something uncharted. (Layer 2 arrives in a future update.)',
+    text: 'The seal is broken. Below lies the Drowned Catacombs, where the dead do not stay dead. Enemies here heal over time. The School of Plague answers the damp: see the Grimoire.',
+  },
+  {
+    id: 'bloodSchool',
+    goal: 'Learn the price of blood',
+    condition: { kind: 'rebirths', count: 1 },
+    text: 'Dying taught you something. Blood is only borrowed, and you know how to borrow more. The School of Blood is open.',
+  },
+  {
+    id: 'shadowSchool',
+    goal: 'Step into the shadow',
+    condition: { kind: 'rebirths', count: 2 },
+    text: 'The second death leaves a shadow behind, and the shadow stays with you. The School of Shadow is open.',
+  },
+  {
+    id: 'covens',
+    goal: 'Choose a coven',
+    condition: { kind: 'rebirths', count: 3 },
+    text: 'Four covens have noticed you. Each offers power, and each wants something. Choose one per run in the Phylactery tab.',
+  },
+  {
+    id: 'drownedKing',
+    goal: 'Slay the Drowned King',
+    condition: { kind: 'maxFloor', floor: 201 },
+    text: 'The Drowned King falls, and his bones are still enormous. You could do something with those bones. The Dracolich can now be raised. Ahead: the Ashen Wastes, where the air itself burns.',
+  },
+  {
+    id: 'glacier',
+    goal: 'Cross the Ashen Wastes',
+    condition: { kind: 'maxFloor', floor: 301 },
+    text: 'Past the Furnace Throne, the fire gives way to ice. The Weeping Glacier slows everything that walks, including the dead.',
+  },
+  {
+    id: 'weepingHeart',
+    goal: 'Thaw the Weeping Heart',
+    condition: { kind: 'maxFloor', floor: 401 },
+    text: 'The Weeping Heart stops weeping. Below the glacier, something enormous is breathing. (Layer 5 arrives in a future update.)',
   },
 ];

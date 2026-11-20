@@ -24,7 +24,7 @@
     <div class="spellbar-buttons">
       {#each g.spells.filter((s) => s.known) as s (s.id)}
         <button
-          class="spell-btn"
+          class="spell-btn school-{s.school}"
           disabled={!s.ready}
           onclick={() => onCast(s.id)}
           title={`${s.name}: ${s.description} (${s.cost} Essence)`}

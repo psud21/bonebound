@@ -510,3 +510,353 @@ select {
 .depth-cap {
   color: var(--essence);
 }
+
+/* ---------- M3: set rarity, elites, schools, library, feats, covens, hazards ---------- */
+.rarity-set {
+  --rarity: #5fd38a;
+}
+.rarity-set.bag-item,
+.rarity-set.slot {
+  box-shadow: 0 0 10px rgba(95, 211, 138, 0.35);
+}
+.item-set {
+  margin: 6px 0;
+  font-family: var(--font-flavor);
+  font-style: italic;
+  color: #8ee6ad;
+}
+.set-box {
+  margin: 8px 0;
+  padding: 10px;
+  border: 1px solid rgba(95, 211, 138, 0.45);
+  border-radius: 8px;
+  background: rgba(20, 45, 30, 0.25);
+}
+.set-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: #8ee6ad;
+}
+.set-bonuses {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 3px;
+  font-size: 0.82rem;
+  color: var(--faint);
+}
+.set-bonuses li.active {
+  color: var(--text);
+}
+.set-pieces {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin-right: 4px;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  border: 1px solid currentColor;
+}
+
+/* Elites and Corpses */
+.elites-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.corpses,
+.corpses-res {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #c9b48a;
+  font-family: var(--font-ui);
+  font-weight: 600;
+}
+.corpse-value {
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+}
+.badge-elite {
+  color: var(--gold);
+  border-color: var(--gold-dim);
+}
+.row-buy.elite .row-owned {
+  color: var(--gold);
+}
+
+/* Grimoire schools */
+.school-bone {
+  --school: #e9e1cf;
+}
+.school-blood {
+  --school: #e2525c;
+}
+.school-plague {
+  --school: #8fbf5a;
+}
+.school-shadow {
+  --school: #9d8cff;
+}
+.school-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 12px 0 0;
+}
+.school-tab {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 4px;
+  color: var(--school);
+  font-weight: 600;
+}
+.school-tab.active {
+  border-color: var(--school);
+  box-shadow: inset 0 -2px 0 var(--school);
+}
+.school-tab.sealed {
+  color: var(--faint);
+}
+.school .school-icon {
+  color: var(--school, var(--text));
+}
+.spell-btn.school-blood {
+  background: radial-gradient(circle at 50% 35%, #5a2430, #1a0f14 75%);
+}
+.spell-btn.school-plague {
+  background: radial-gradient(circle at 50% 35%, #34482a, #121810 75%);
+}
+.spell-btn.school-shadow {
+  background: radial-gradient(circle at 50% 35%, #2c2a5a, #100f1e 75%);
+}
+.spellbar-buttons {
+  flex-wrap: wrap;
+}
+
+/* Library */
+.lore-summary {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.lore-summary > span:last-child {
+  display: grid;
+  gap: 2px;
+}
+.lore-icon {
+  color: #e6c97a;
+  filter: drop-shadow(0 0 8px rgba(230, 201, 122, 0.35));
+}
+.feat-icon {
+  color: var(--gold);
+  filter: drop-shadow(0 0 8px rgba(209, 173, 98, 0.35));
+}
+.lore-count strong {
+  font-size: 1.3rem;
+  color: #e6c97a;
+}
+.branch-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.research {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.project {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.22);
+}
+.project.active {
+  border-color: #e6c97a;
+  box-shadow: 0 0 12px rgba(230, 201, 122, 0.15);
+}
+.project.done {
+  opacity: 0.7;
+  border-style: solid;
+  border-color: var(--gold-dim);
+}
+.project.locked {
+  opacity: 0.5;
+  border-style: dashed;
+}
+.project-body {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.project-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+.project-desc {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.project-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: #e6c97a;
+}
+.study:not(:disabled) {
+  border-color: #e6c97a;
+  color: #e6c97a;
+}
+
+/* Feats */
+.feat-grid {
+  list-style: none;
+  margin: 12px 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 6px;
+}
+.feat {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  color: var(--faint);
+}
+.feat.earned {
+  border-style: solid;
+  border-color: var(--gold-dim);
+  color: var(--text);
+  background: linear-gradient(180deg, rgba(47, 38, 24, 0.6), rgba(29, 23, 18, 0.6));
+}
+.feat.earned .feat-badge {
+  color: var(--gold);
+}
+.feat-body {
+  display: grid;
+  min-width: 0;
+}
+.feat-name {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.feat-desc {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.records {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 4px 12px;
+  font-size: 0.82rem;
+}
+.records div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px solid var(--border-soft);
+  padding: 2px 0;
+}
+.records dt {
+  color: var(--muted);
+}
+.records dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Covens */
+.covens {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.coven {
+  display: grid;
+  gap: 3px;
+  justify-items: start;
+  align-content: start;
+  text-align: left;
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+}
+.coven.chosen {
+  border-color: var(--gold);
+  box-shadow: 0 0 14px rgba(209, 173, 98, 0.3);
+  opacity: 1;
+}
+.coven:disabled:not(.chosen) {
+  opacity: 0.45;
+}
+.coven-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--gold);
+}
+.coven-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+.coven-motto {
+  font-family: var(--font-flavor);
+  font-style: italic;
+  color: var(--muted);
+}
+.coven-boon {
+  color: var(--plague);
+}
+.coven-cost {
+  color: #ff9a8a;
+}
+
+/* Layer hazards */
+.hazard {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin: 2px auto 4px;
+  max-width: 460px;
+  font-size: 0.75rem;
+  text-align: center;
+}
+.hazard-regen {
+  color: #6fd3d0;
+}
+.hazard-burn {
+  color: #ff9a4a;
+}
+.hazard-slow {
+  color: #a9d4ff;
+}
+.hazard-off span {
+  opacity: 0.6;
+}
+.hazard-off strong {
+  color: var(--plague);
+}

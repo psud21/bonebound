@@ -27,6 +27,12 @@ export function describeCondition(state: GameState, c: AnyCondition): ConditionP
   switch (c.kind) {
     case 'start':
       return make('Begin', 1, 1);
+    case 'rebirths':
+      return make(
+        c.count === 1 ? 'Perform a Rebirth' : `Perform ${c.count} Rebirths`,
+        state.prestige.rebirths,
+        c.count,
+      );
     case 'lifetimeBones':
       return make(
         `Earn ${formatNumber(c.amount, n)} Bones in total`,

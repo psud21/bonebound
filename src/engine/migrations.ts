@@ -18,6 +18,8 @@ export const MIGRATIONS: Readonly<Record<number, (save: RawSave) => RawSave>> = 
     delete descent.enemyHp;
     return { ...s, descent };
   },
+  // v3 → v4 (M3): Corpses, Elites, the Library, feats, covens and set relics are new;
+  // defaults fill them and sanitize() normalizes old items (set: null).
 };
 
 export class SaveVersionError extends Error {}

@@ -6,11 +6,12 @@ import { GRAVEWORKS } from '../content/graveworks';
 import { BALANCE } from '../content/balance';
 import type { BuffId } from '../content/events';
 import type { EquipSlot, ItemKind, Rarity } from '../content/loot';
-import type { SchoolId, SpellId } from '../content/spells';
+import { SCHOOL_IDS, type SchoolId, type SpellId } from '../content/spells';
+import { ELITES } from '../content/elites';
 import { enemyMaxHp } from '../systems/descent';
 
 /** Bump this and add a migration in migrations.ts whenever the save shape changes. */
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 export type BuyAmount = 1 | 10 | 100 | 'max';
 
@@ -48,6 +49,8 @@ export interface Item {
   implicit: ItemAffix;
   affixes: ItemAffix[];
   legendary: string | null;
+  /** Set id for set relics. */
+  set: string | null;
   /** Times this item has been Empowered. */
   empowered: number;
 }
@@ -73,9 +76,12 @@ export interface GameState {
   rng: RngState;
   resources: {
     bones: Decimal;
+    corpses: number;
   };
   army: {
     minions: Record<string, { owned: number }>;
+    /** Elite levels by id. */
+    elites: Record<string, number>;
   };
   crypt: {
     graveworks: Record<string, GraveworksState>;
@@ -126,7 +132,18 @@ export interface GameState {
     bestFloor: number;
     /** Play time when this run began. */
     runStartedAt: number;
+    /** Coven sworn to this run, if any. */
+    coven: string | null;
   };
+  library: {
+    lore: number;
+    loreEarned: number;
+    completed: string[];
+    /** Projects in progress with seconds left. */
+    active: { id: string; remaining: number }[];
+  };
+  /** Feats (achievements) earned, kept forever. */
+  feats: string[];
   unlocks: Record<string, boolean>;
   log: LogEntry[];
   stats: {
@@ -138,6 +155,8 @@ export interface GameState {
     soulsCaught: number;
     itemsFound: number;
     spellsCast: number;
+    legendariesFound: number;
+    corpsesEarned: number;
   };
   settings: {
     notation: Notation;
@@ -150,9 +169,10 @@ export function createInitialState(now: number = Date.now(), seed: number = rand
     version: SAVE_VERSION,
     meta: { createdAt: now, lastActiveAt: now, lastSavedAt: 0, playTimeSeconds: 0 },
     rng: createRng(seed),
-    resources: { bones: new Decimal(0) },
+    resources: { bones: new Decimal(0), corpses: 0 },
     army: {
       minions: Object.fromEntries(MINIONS.map((m) => [m.id, { owned: 0 }])),
+      elites: Object.fromEntries(ELITES.map((e) => [e.id, 0])),
     },
     crypt: {
       graveworks: Object.fromEntries(
@@ -170,8 +190,10 @@ export function createInitialState(now: number = Date.now(), seed: number = rand
     },
     events: { soulCooldown: BALANCE.SOUL_MIN_DELAY, soul: null, buffs: {} },
     loot: { nextId: 1, inventory: [], equipped: {}, dust: 0, autoSalvage: 'none', unseen: 0 },
-    magic: { essence: 0, cooldowns: {}, autoCast: false, schools: { bone: { level: 0, xp: 0 } } },
-    prestige: { shards: 0, shardsEarned: 0, rebirths: 0, pact: [], autoBuy: false, bestFloor: 1, runStartedAt: 0 },
+    magic: { essence: 0, cooldowns: {}, autoCast: false, schools: Object.fromEntries(SCHOOL_IDS.map((id) => [id, { level: 0, xp: 0 }])) as Record<SchoolId, { level: number; xp: number }> },
+    prestige: { shards: 0, shardsEarned: 0, rebirths: 0, pact: [], autoBuy: false, bestFloor: 1, runStartedAt: 0, coven: null },
+    library: { lore: 0, loreEarned: 0, completed: [], active: [] },
+    feats: [],
     unlocks: {},
     log: [],
     stats: {
@@ -183,6 +205,8 @@ export function createInitialState(now: number = Date.now(), seed: number = rand
       soulsCaught: 0,
       itemsFound: 0,
       spellsCast: 0,
+      legendariesFound: 0,
+      corpsesEarned: 0,
     },
     settings: { notation: 'short', buyAmount: 1 },
   };

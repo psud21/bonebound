@@ -26,7 +26,10 @@ import { clickDamage } from '../systems/siphon';
 import { availableUpgrades } from '../systems/upgrades';
 import { isUnlocked } from '../systems/unlocks';
 import type { IconName } from './icons.generated';
-import { buildGrimoire, buildPhylactery, buildRelics } from './sections';
+import { buildCovens, buildElites, buildFeats, buildGrimoire, buildLibrary, buildPhylactery, buildRelics } from './sections';
+import { minionAvailable } from '../systems/army';
+import { hazardFactor, regenRate } from '../systems/hazards';
+import { layerNumber } from '../content/layers';
 import { hasPact } from '../systems/prestige';
 
 /** How many locked items are previewed by name before the rest show as "???". */
@@ -78,6 +81,8 @@ export function buildView(state: GameState) {
     const shownCount = Math.max(1, count);
     const cost = purchaseCost(state, m.id, shownCount);
     const unlockAt = m.baseCost * 0.4;
+    const sealed = !minionAvailable(state, m.id);
+    const deepest = Math.max(state.prestige.bestFloor, d.maxFloor);
     return {
       id: m.id,
       icon: m.icon,
@@ -86,8 +91,10 @@ export function buildView(state: GameState) {
       trait: m.trait ?? null,
       /** 'open' = buyable row, 'preview' = locked but named, 'hidden' = "???". */
       status: revealed ? ('open' as const) : preview ? ('preview' as const) : ('hidden' as const),
-      unlockText: `Earn ${fmt(unlockAt)} Bones in total`,
-      unlockRatio: Math.min(1, lifetime.toNumber() / unlockAt),
+      unlockText: sealed ? `Defeat the guardian of floor ${(m.requiresFloor ?? 1) - 1}` : `Earn ${fmt(unlockAt)} Bones in total`,
+      unlockRatio: sealed
+        ? Math.min(1, deepest / (m.requiresFloor ?? 1))
+        : Math.min(1, lifetime.toNumber() / unlockAt),
       owned,
       buyCount: shownCount,
       cost: fmt(cost),
@@ -184,6 +191,12 @@ export function buildView(state: GameState) {
     bloodMoon: 'evil-moon',
     raiseLegion: 'rally-the-troops',
     ossuaryRite: 'skeleton-inside',
+    bloodRite: 'bleeding-heart',
+    plagueWind: 'poison-cloud',
+    rot: 'poison-bottle',
+    pestilence: 'poison-gas',
+    curseOfFrailty: 'cursed-star',
+    eclipse: 'moon-orbit',
   };
   const buffs = (Object.keys(state.events.buffs) as BuffId[]).map((id) => ({
     id,
@@ -202,6 +215,13 @@ export function buildView(state: GameState) {
     bossDps: fmt(armyDps(state, true)),
     clickDamage: fmt(clickDamage(state)),
     layerName: layer.name,
+    layerNumber: layerNumber(d.floor),
+    hazard: layer.hazard,
+    hazardKind: layer.modifier.kind,
+    /** 0 when research, relics or a coven cancel the hazard entirely, 1 at full strength. */
+    hazardStrength: layer.modifier.kind === 'none' ? 0 : hazardFactor(state, layer.modifier.kind),
+    /** Percent of max HP the current enemy heals per second (0 when none). */
+    regenPercent: Math.round(regenRate(state) * 1000) / 10,
     floor: d.floor,
     maxFloor: d.maxFloor,
     killsOnFloor: d.killsOnFloor,
@@ -244,6 +264,10 @@ export function buildView(state: GameState) {
     relics: buildRelics(state),
     grimoire: buildGrimoire(state),
     phylactery: buildPhylactery(state),
+    elites: buildElites(state),
+    library: buildLibrary(state),
+    feats: buildFeats(state),
+    covens: buildCovens(state),
     autoBuyOwned: hasPact(state, 'autoRaise'),
     autoBuy: state.prestige.autoBuy,
     shardsEarned: state.prestige.shardsEarned,

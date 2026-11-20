@@ -37,7 +37,16 @@
 
 <section class="panel descent" class:boss={view.isBoss}>
   <h2 class="panel-title"><Icon name="stairs" size={22} /> The Descent</h2>
-  <div class="layer"><Icon name="crypt-entrance" size={14} /> {view.layerName}</div>
+  <div class="layer"><Icon name="crypt-entrance" size={14} /> Layer {view.layerNumber}: {view.layerName}</div>
+  {#if view.hazard}
+    <div class="hazard hazard-{view.hazardKind}" class:hazard-off={view.hazardStrength === 0} title={view.hazard}>
+      <Icon name={view.hazardKind === 'regen' ? 'drop' : view.hazardKind === 'burn' ? 'fire' : 'snowflake-2'} size={13} />
+      <span>
+        {view.hazard}
+        {#if view.hazardStrength === 0}<strong>Cancelled.</strong>{:else if view.hazardStrength < 1}<strong>Weakened to {Math.round(view.hazardStrength * 100)}%.</strong>{/if}
+      </span>
+    </div>
+  {/if}
   <div class="floor">
     Floor <strong data-testid="floor">{view.floor}</strong>
     <span class="muted">· deepest {view.maxFloor}</span>
@@ -81,7 +90,7 @@
 
   <div class="hpbar" aria-label="Enemy health">
     <div class="hpfill" style:width={`${view.hpPercent}%`}></div>
-    <span class="hptext">{view.enemyHp} / {view.enemyMaxHp}</span>
+    <span class="hptext">{view.enemyHp} / {view.enemyMaxHp}{view.regenPercent > 0 ? ` · heals ${view.regenPercent}%/s` : ''}</span>
   </div>
 
   <SpellBar {runtime} {view} />

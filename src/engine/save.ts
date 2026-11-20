@@ -1,7 +1,11 @@
 import { fromJson, mergeDefaults, toJson } from './serialize';
 import { migrate, type RawSave } from './migrations';
 import { createInitialState, type BuyAmount, type GameState, type Item, type ItemAffix } from './state';
-import { EQUIP_SLOTS, ITEM_KINDS, RARITIES, kindForSlot, type EquipSlot, type ItemKind, type Rarity } from '../content/loot';
+import { EQUIP_SLOTS, ITEM_KINDS, RARITIES, SETS_BY_ID, kindForSlot, type EquipSlot, type ItemKind, type Rarity } from '../content/loot';
+import { FEATS_BY_ID } from '../content/achievements';
+import { COVENS_BY_ID } from '../content/covens';
+import { ELITES_BY_ID } from '../content/elites';
+import { RESEARCH_BY_ID } from '../content/research';
 import { PACT_BY_ID } from '../content/pact';
 import { SPELLS_BY_ID, type SpellId } from '../content/spells';
 import type { Notation } from './format';
@@ -120,11 +124,11 @@ function sanitize(state: GameState, raw: RawSave): GameState {
 
   // Loot: drop anything that isn't a well-formed item.
   const loot = state.loot;
-  loot.inventory = Array.isArray(loot.inventory) ? loot.inventory.filter(isItem) : [];
+  loot.inventory = Array.isArray(loot.inventory) ? loot.inventory.filter(isItem).map(normalizeItem) : [];
   const equipped: Partial<Record<EquipSlot, Item>> = {};
   for (const slot of EQUIP_SLOTS) {
     const item = (loot.equipped as Record<string, unknown>)[slot];
-    if (isItem(item) && item.kind === kindForSlot(slot)) equipped[slot] = item;
+    if (isItem(item) && item.kind === kindForSlot(slot)) equipped[slot] = normalizeItem(item);
   }
   loot.equipped = equipped;
   const maxId = Math.max(0, ...loot.inventory.map((i) => i.id), ...Object.values(equipped).map((i) => i!.id));
@@ -156,7 +160,51 @@ function sanitize(state: GameState, raw: RawSave): GameState {
   p.autoBuy = p.autoBuy === true;
   p.bestFloor = Math.max(cleanCount(p.bestFloor), d.maxFloor, 1);
   if (!Number.isFinite(p.runStartedAt) || p.runStartedAt < 0) p.runStartedAt = 0;
+  if (typeof p.coven !== 'string' || !COVENS_BY_ID[p.coven]) p.coven = null;
+
+  // Corpses and Elites
+  state.resources.corpses = cleanAmount(state.resources.corpses);
+  const elites: Record<string, number> = {};
+  for (const id of Object.keys(ELITES_BY_ID)) elites[id] = cleanCount(state.army.elites[id]);
+  state.army.elites = elites;
+
+  // Library
+  const lib = state.library;
+  lib.lore = cleanAmount(lib.lore);
+  lib.loreEarned = Math.max(cleanAmount(lib.loreEarned), lib.lore);
+  lib.completed = Array.isArray(lib.completed)
+    ? [...new Set(lib.completed.filter((id): id is string => typeof id === 'string' && !!RESEARCH_BY_ID[id]))]
+    : [];
+  lib.active = Array.isArray(lib.active)
+    ? lib.active.filter(
+        (a, i, all) =>
+          typeof a === 'object' &&
+          a !== null &&
+          !!RESEARCH_BY_ID[a.id] &&
+          !lib.completed.includes(a.id) &&
+          typeof a.remaining === 'number' &&
+          Number.isFinite(a.remaining) &&
+          all.findIndex((b) => b.id === a.id) === i,
+      )
+    : [];
+
+  state.feats = Array.isArray(state.feats)
+    ? [...new Set(state.feats.filter((id): id is string => typeof id === 'string' && !!FEATS_BY_ID[id]))]
+    : [];
+  state.stats.legendariesFound = cleanCount(state.stats.legendariesFound);
+  state.stats.corpsesEarned = cleanAmount(state.stats.corpsesEarned);
   return state;
+}
+
+/** Fills fields added after the item was saved. */
+function normalizeItem(item: Item): Item {
+  const set = typeof item.set === 'string' && SETS_BY_ID[item.set] ? item.set : null;
+  return { ...item, set, empowered: cleanCount(item.empowered) };
+}
+
+/** A non-negative finite number (fractions allowed). */
+function cleanAmount(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : 0;
 }
 
 function isItem(value: unknown): value is Item {
@@ -174,6 +222,7 @@ function isItem(value: unknown): value is Item {
     Array.isArray(i.affixes) &&
     i.affixes.every(affixOk) &&
     (i.legendary === null || typeof i.legendary === 'string') &&
+    (i.set === undefined || i.set === null || typeof i.set === 'string') &&
     (typeof i.empowered === 'number' || i.empowered === undefined)
   );
 }
