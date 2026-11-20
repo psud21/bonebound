@@ -21,7 +21,7 @@
       <div class="essence-fill" style:width={`${g.essencePercent}%`}></div>
       <span><Icon name="magic-swirl" size={12} /> {g.essence}/{g.essenceMax}</span>
     </div>
-    <div class="spellbar-buttons">
+    <div class="spellbar-buttons" title="Hotkeys: 1–9">
       {#each g.spells.filter((s) => s.known) as s (s.id)}
         <button
           class="spell-btn school-{s.school}"

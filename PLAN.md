@@ -302,7 +302,28 @@ tests/
 | **M2 Loot and Rebirth** (wk 4–6) ✅ | Item slots, rarities, random stats, salvage, Essence and Bone school, Phylactery Rebirth and Dark Pact tree, offline progress | A full loop into a noticeably faster second run |
 | **M3 Depth** (wk 7–9) ✅ | All 4 schools, Covens, Forbidden Library, Layers 2–4, legendaries and sets, Elite minions, achievements, story | 5+ hours of content |
 | **M4 Endgame** (wk 10–12) ✅ | Rifts, Curses, Gems and sockets, Layers 5–7, Lichdom and Dark Levels | Week-long progression simulated |
-| **M5 Polish and launch** (wk 13+) | Art and audio pass, tutorial hints, playtests, itch.io release | External testers reach their first Rebirth without help |
+| **M5 Polish and launch** (wk 13+) 🟡 | Art and audio pass, tutorial hints, playtests, itch.io release | External testers reach their first Rebirth without help |
+
+### M5 so far
+
+- **Audio.** Every sound effect is synthesized with WebAudio, so the game ships no audio files.
+  - Effects cover Siphon hits and crits, kills, guardians, loot by rarity, souls, spells, level-ups, feats, Rebirth, Ascension and Rifts.
+  - A per-frame watcher compares game counters, so the DOM-free systems stay unaware of sound.
+  - Volume and mute are in the settings.
+- **Tutorial hints.** Fifteen one-at-a-time hints run from the first Siphon to the first Dark Pact purchase.
+  - Each disappears once the player has done the thing, and can be dismissed or switched off.
+  - Saves from before M5 start with the basic hints marked seen.
+- **Polish.**
+  - Keys: Space to Siphon, 1–9 to cast, Esc to dismiss a hint.
+  - A screen flash for set and legendary drops, and a pulse on Siphon crits.
+  - A Reduce motion setting, on top of the system preference.
+  - Favicon and page metadata; Latin-only font subsets (the release zip went from 938 kB to 427 kB).
+  - The version is shown in settings.
+- **Release.** `npm run release` zips the build for itch.io's HTML5 upload, using a small dependency-free zip writer that is tested.
+- **Still open.**
+  - The itch.io upload itself, which needs the owner's account.
+  - External play-tests: the "done when" criterion is that testers reach their first Rebirth without help.
+  - The final title, and whether to commission pixel art (the open decisions below).
 
 ### M4 as built
 

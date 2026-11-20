@@ -22,6 +22,12 @@ export const MIGRATIONS: Readonly<Record<number, (save: RawSave) => RawSave>> = 
   // defaults fill them and sanitize() normalizes old items (set: null).
   // v4 → v5 (M4): gems, sockets, Rifts, Curses and Lichdom are new; defaults fill them
   // and sanitize() gives old items an empty gem list.
+  // v5 → v6 (M5): sound, hint and motion settings and the tutorial are new. Players who
+  // already have a save are past the basics, so they start with the early hints marked seen.
+  5: (s) => {
+    const tutorial = { seen: ['siphon', 'firstMinion', 'crypt', 'startCycle', 'bulkBuy'] };
+    return { ...s, tutorial };
+  },
 };
 
 export class SaveVersionError extends Error {}

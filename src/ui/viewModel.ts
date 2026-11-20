@@ -274,6 +274,8 @@ export function buildView(state: GameState) {
     depthBonus: depthBonus(state).toFixed(2),
     buyAmount,
     notation: n,
+    reduceMotion: state.settings.reduceMotion,
+    settings: state.settings,
     relics: buildRelics(state),
     grimoire: buildGrimoire(state),
     phylactery: buildPhylactery(state),

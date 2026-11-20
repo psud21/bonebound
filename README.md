@@ -2,7 +2,7 @@
 
 A dark-fantasy incremental game. See [PLAN.md](PLAN.md) for the full design and roadmap.
 
-**Status:** M4 (Endgame) complete on top of M1–M3. The game now runs to an endless seventh layer, with:
+**Status:** M5 (Polish) on top of M1–M4: synthesized sound effects, first-time tutorial hints, keyboard shortcuts, reduce-motion and volume settings, loot and crit flashes, and an itch.io release package. Before M5, M4 (Endgame) was complete on top of M1–M3. The game now runs to an endless seventh layer, with:
 - gems and sockets
 - Abyssal Rifts
 - Curses
@@ -28,7 +28,18 @@ M3 added Layers 2–4, four more minions, Corpses and Elites, the Schools of Blo
 | `npm run check` | Type-check TypeScript and Svelte |
 | `npm run build` | Production build into `dist/` |
 | `npm run sim` | Balance simulator (options: `--hours=4 --cps=0 --seed=7 --attention=10 --souls=0.3 --rebirth=10 --rebirths=2 --gear=0 --spells=0`; week runs: `--days=7 --active=4 --ascend=2 --dt=0.5 --decide=5 --brief`) |
-| `npm run icons` | Regenerate the bundled icon subset |
+| `npm run icons` | Regenerate the bundled icon subset and the favicon |
+| `npm run release` | Production build zipped for itch.io (`release/`) |
+
+## Releasing to itch.io
+
+1. Run `npm run release`. It builds the game and writes `release/bonebound-web-v<version>.zip`, with `index.html` at the root.
+2. On itch.io, create a project with **Kind of project: HTML** and upload the zip.
+3. Tick **This file will be played in the browser**.
+4. Set the viewport to about 1280×800 and enable the fullscreen button. The layout also works on phones.
+5. Saves live in the browser's local storage for the itch.io page, so they carry across visits but not across browsers. Players can move a save with Export and Import under **Settings, saves & stats**.
+
+Bump `version` in `package.json` before each release. The game shows it in the settings panel.
 
 ## Layout
 
