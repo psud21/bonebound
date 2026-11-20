@@ -12,6 +12,11 @@
   import Chronicle from './ui/Chronicle.svelte';
   import DebugPanel from './ui/DebugPanel.svelte';
   import SoulOverlay from './ui/SoulOverlay.svelte';
+  import HintCard from './ui/HintCard.svelte';
+  import { updateTutorial } from './systems/tutorial';
+  import { watchForSounds } from './ui/sounds';
+  import { dismissHint } from './systems/tutorial';
+  import type { Rarity } from './content/loot';
 
   let { runtime }: { runtime: GameRuntime } = $props();
 
@@ -24,6 +29,47 @@
     return runtime.offlineSummary;
   });
 
+  const hint = $derived.by(() => {
+    void frame.n;
+    return updateTutorial(runtime.state);
+  });
+
+  // Sounds and the rare-loot flash follow changes in the game state.
+  let flash = $state<{ rarity: Rarity; key: number } | null>(null);
+  $effect(() => {
+    void frame.n;
+    const rarity = watchForSounds(runtime.state);
+    if (rarity) {
+      const key = Date.now();
+      flash = { rarity, key };
+      setTimeout(() => {
+        if (flash?.key === key) flash = null;
+      }, 1200);
+    }
+  });
+
+  const calm = $derived(view.reduceMotion);
+  $effect(() => {
+    document.documentElement.classList.toggle('calm', calm);
+  });
+
+  /** Keyboard: Space siphons, 1–9 cast the spells under the enemy, Esc dismisses a hint. */
+  function onKey(e: KeyboardEvent) {
+    const target = e.target as HTMLElement | null;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (target && /^(INPUT|SELECT|TEXTAREA)$/.test(target.tagName)) return;
+    if (e.code === 'Space') {
+      e.preventDefault();
+      if (!e.repeat) document.querySelector<HTMLButtonElement>('[data-testid="siphon"]')?.click();
+    } else if (/^Digit[1-9]$/.test(e.code)) {
+      const buttons = document.querySelectorAll<HTMLButtonElement>('.spell-btn');
+      buttons[Number(e.code.slice(5)) - 1]?.click();
+    } else if (e.code === 'Escape' && hint) {
+      dismissHint(runtime.state, hint.id);
+      refresh();
+    }
+  }
+
   /** Deeper floors darken and redden the backdrop (0 at floor 1, 1 at floor 100). */
   const depth = $derived(Math.min(1, (view.floor - 1) / 99));
 
@@ -33,7 +79,14 @@
   }
 </script>
 
+<svelte:window onkeydown={onKey} />
+
 <div class="backdrop" data-layer={view.layerNumber} style:--depth={depth} aria-hidden="true"></div>
+{#if flash}
+  {#key flash.key}
+    <div class="loot-flash loot-flash-{flash.rarity}" aria-hidden="true"></div>
+  {/key}
+{/if}
 
 <header class="topbar">
   <h1 class="brand">
@@ -98,6 +151,7 @@
 <main class="layout">
   <ArmyPanel {runtime} {view} />
   <div class="column center-col">
+    <HintCard {runtime} {hint} />
     <DescentPanel {runtime} {view} />
     <Chronicle log={view.log} />
   </div>

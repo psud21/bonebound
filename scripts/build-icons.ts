@@ -5,7 +5,7 @@
  * Icons named as `icon: '...'` in src/content are picked up automatically; add any
  * other icon (used only by the UI) to ICON_NAMES. Run the script and commit the result.
  */
-import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 export const ICON_NAMES = [
@@ -75,4 +75,13 @@ export type IconName = keyof typeof ICONS;
 `;
 
 writeFileSync(join(root, 'src/ui/icons.generated.ts'), out);
+
+// The browser-tab icon: the crowned skull in bone white on a dark disc.
+const crown = set.icons['crowned-skull']!.body.replace(/fill="currentColor"/g, 'fill="#e9e1cf"');
+mkdirSync(join(root, 'public'), { recursive: true });
+writeFileSync(
+  join(root, 'public/favicon.svg'),
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${set.width ?? 512} ${set.width ?? 512}"><circle cx="256" cy="256" r="256" fill="#1a1420"/><g transform="translate(64 64) scale(0.75)">${crown}</g></svg>
+`,
+);
 console.log(`Wrote ${names.length} icons to src/ui/icons.generated.ts`);

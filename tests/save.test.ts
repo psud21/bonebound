@@ -63,7 +63,7 @@ describe('encode / decode', () => {
     const back = decodeSave(encodeSave(s));
     expect(back.resources.bones.eq(s.resources.bones)).toBe(true);
     expect(back.descent).toMatchObject({ floor: 42, maxFloor: 50 });
-    expect(back.settings).toEqual({ buyAmount: 'max', notation: 'scientific' });
+    expect(back.settings).toMatchObject({ buyAmount: 'max', notation: 'scientific' });
     expect(back.army.minions.skeletonWarrior!.owned).toBe(17);
     expect(back.rng.state).toBe(s.rng.state);
   });
@@ -95,7 +95,7 @@ describe('encode / decode', () => {
     expect(s.descent.killsOnFloor).toBe(0);
     expect(s.army.minions.skeletonWarrior!.owned).toBe(0);
     expect(s.army.minions.ghoul!.owned).toBe(0);
-    expect(s.settings).toEqual({ buyAmount: 1, notation: 'short' });
+    expect(s.settings).toMatchObject({ buyAmount: 1, notation: 'short', sound: true, volume: 0.5 });
   });
 });
 

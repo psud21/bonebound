@@ -69,6 +69,14 @@ function sanitize(state: GameState, raw: RawSave): GameState {
   const buy = rawSettings.buyAmount as BuyAmount;
   state.settings.buyAmount = BUY_AMOUNTS.includes(buy) ? buy : 1;
   if (!NOTATIONS.includes(state.settings.notation)) state.settings.notation = 'short';
+  state.settings.sound = state.settings.sound !== false;
+  state.settings.hints = state.settings.hints !== false;
+  state.settings.reduceMotion = state.settings.reduceMotion === true;
+  const vol = state.settings.volume;
+  state.settings.volume = typeof vol === 'number' && Number.isFinite(vol) ? Math.max(0, Math.min(1, vol)) : 0.5;
+  state.tutorial.seen = Array.isArray(state.tutorial.seen)
+    ? [...new Set(state.tutorial.seen.filter((id): id is string => typeof id === 'string'))]
+    : [];
 
   const d = state.descent;
   if (!Number.isFinite(d.floor) || d.floor < 1) d.floor = 1;

@@ -10,18 +10,22 @@
   import { toast } from './feedback.svelte';
   import { UPGRADES_BY_ID } from '../content/upgrades';
   import Icon from './Icon.svelte';
+  import { play } from './audio';
 
   let { runtime, view }: { runtime: GameRuntime; view: GameView } = $props();
 
   const BUY_AMOUNTS: BuyAmount[] = [1, 10, 100, 'max'];
 
   function onBuy(id: string) {
-    buyMinion(runtime.state, id, view.buyAmount);
+    if (buyMinion(runtime.state, id, view.buyAmount) > 0) play('buy');
     refresh();
   }
 
   function onUpgrade(id: string) {
-    if (buyUpgrade(runtime.state, id)) toast(`${UPGRADES_BY_ID[id]?.name}: ${UPGRADES_BY_ID[id]?.description}`);
+    if (buyUpgrade(runtime.state, id)) {
+      play('buy');
+      toast(`${UPGRADES_BY_ID[id]?.name}: ${UPGRADES_BY_ID[id]?.description}`);
+    }
     refresh();
   }
 

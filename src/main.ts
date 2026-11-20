@@ -1,13 +1,14 @@
 import { mount } from 'svelte';
-import '@fontsource/cinzel/600.css';
-import '@fontsource/cinzel/700.css';
-import '@fontsource/eb-garamond/400.css';
-import '@fontsource/eb-garamond/400-italic.css';
+import '@fontsource/cinzel/latin-600.css';
+import '@fontsource/cinzel/latin-700.css';
+import '@fontsource/eb-garamond/latin-400.css';
+import '@fontsource/eb-garamond/latin-400-italic.css';
 import './app.css';
 import './panels.css';
 import App from './App.svelte';
 import { GameRuntime } from './game';
 import { startRenderClock } from './ui/frame.svelte';
+import { initAudio } from './ui/audio';
 
 function getStorage(): Storage | null {
   try {
@@ -30,6 +31,7 @@ function memoryStorage(): Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> {
 const runtime = new GameRuntime(getStorage() ?? memoryStorage());
 runtime.boot();
 startRenderClock();
+initAudio();
 
 if (import.meta.env.DEV) {
   (window as unknown as { __game: GameRuntime }).__game = runtime;

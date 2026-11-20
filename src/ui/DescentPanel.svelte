@@ -10,14 +10,22 @@
   import Icon from './Icon.svelte';
   import DepthTrack from './DepthTrack.svelte';
   import SpellBar from './SpellBar.svelte';
+  import { play } from './audio';
 
   let { runtime, view }: { runtime: GameRuntime; view: GameView } = $props();
 
   let hit = $state(false);
+  let crit = $state(false);
   let hitTimer: ReturnType<typeof setTimeout> | undefined;
 
   function onSiphon() {
     const result = siphon(runtime.state);
+    play(result.crit ? 'crit' : 'hit');
+    if (result.crit) {
+      crit = false;
+      requestAnimationFrame(() => (crit = true));
+      setTimeout(() => (crit = false), 260);
+    }
     floatText(`${result.crit ? 'CRIT ' : ''}-${formatNumber(result.damage, view.notation)}`, result.kills > 0 || result.crit);
     hit = false;
     // Restart the hit animation on every click.
@@ -35,7 +43,7 @@
   }
 </script>
 
-<section class="panel descent" class:boss={view.isBoss && !view.rift.active} class:in-rift={view.rift.active}>
+<section class="panel descent" class:boss={view.isBoss && !view.rift.active} class:in-rift={view.rift.active} class:crit-pulse={crit}>
   <h2 class="panel-title"><Icon name="stairs" size={22} /> The Descent</h2>
   <div class="layer"><Icon name="crypt-entrance" size={14} /> Layer {view.layerNumber}: {view.layerName}</div>
   {#if view.hazard}

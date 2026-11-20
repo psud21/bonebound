@@ -1211,3 +1211,14 @@ button.upgrade:not(:disabled):hover {
     transition: none !important;
   }
 }
+
+/* The in-game "Reduce motion" setting does the same as the system preference. */
+.calm *,
+.calm *::before,
+.calm *::after {
+  animation: none !important;
+  transition: none !important;
+}
+.calm .loot-flash {
+  display: none;
+}

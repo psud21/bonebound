@@ -11,7 +11,7 @@ import { ELITES } from '../content/elites';
 import { enemyMaxHp } from '../systems/descent';
 
 /** Bump this and add a migration in migrations.ts whenever the save shape changes. */
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 
 export type BuyAmount = 1 | 10 | 100 | 'max';
 
@@ -190,6 +190,17 @@ export interface GameState {
   settings: {
     notation: Notation;
     buyAmount: BuyAmount;
+    /** Sound effects on, and their volume (0..1). */
+    sound: boolean;
+    volume: number;
+    /** Show first-time tutorial hints. */
+    hints: boolean;
+    /** Calm animations (also on when the system asks for reduced motion). */
+    reduceMotion: boolean;
+  };
+  tutorial: {
+    /** Hints already shown and dismissed. */
+    seen: string[];
   };
 }
 
@@ -242,6 +253,7 @@ export function createInitialState(now: number = Date.now(), seed: number = rand
       riftsRun: 0,
       gemsFound: 0,
     },
-    settings: { notation: 'short', buyAmount: 1 },
+    settings: { notation: 'short', buyAmount: 1, sound: true, volume: 0.5, hints: true, reduceMotion: false },
+    tutorial: { seen: [] },
   };
 }
