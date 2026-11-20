@@ -23,6 +23,10 @@ function parseArgs(argv: string[]): Partial<SimOptions> {
     if (key === 'dt') out.dt = value;
     if (key === 'attention') out.attentionSeconds = value;
     if (key === 'souls') out.soulCatchRate = value;
+    if (key === 'rebirth') out.rebirthAfterStall = value * 60;
+    if (key === 'rebirths') out.maxRebirths = value;
+    if (key === 'gear') out.useGear = value !== 0;
+    if (key === 'spells') out.useSpells = value !== 0;
   }
   return out;
 }
@@ -45,7 +49,8 @@ console.log(
 );
 console.log(
   `Bosses: ${s.stats.bossesDefeated} defeated, ${result.bossFails} failed · Souls caught: ${s.stats.soulsCaught} · ` +
-    `Upgrades: ${s.upgrades.purchased.length}`,
+    `Upgrades: ${s.upgrades.purchased.length} · Rebirths: ${s.prestige.rebirths} · Shards: ${s.prestige.shardsEarned} · ` +
+    `Items found: ${s.stats.itemsFound} · Bone level: ${s.magic.schools.bone.level}`,
 );
 
 const outDir = join(import.meta.dirname, 'out');

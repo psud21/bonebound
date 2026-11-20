@@ -23,6 +23,14 @@ export const ICON_NAMES = [
   'crossed-bones', 'sparkling-sabre', 'sands-of-time', 'soul', 'evil-moon', 'pentacle', 'skeletal-hand',
   'graveyard', 'old-lantern', 'padlock', 'evil-book', 'stairs', 'crypt-entrance', 'raise-skeleton',
   'scroll-unfurled', 'two-coins', 'locked-chest', 'magic-portal', 'gothic-cross', 'rune-stone',
+  // Equipment slots
+  'wizard-staff', 'skull-shield', 'visored-helm', 'breastplate', 'gauntlet', 'leather-boot', 'gem-pendant', 'skull-ring',
+  // Spells, Essence, Relics, Phylactery
+  'thrown-spear', 'rally-the-troops', 'skeleton-inside', 'magic-swirl', 'spell-book', 'knapsack', 'dust-cloud',
+  'hammer-break', 'anvil-impact', 'upgrade', 'soul-vessel', 'sparkles',
+  // Dark Pact
+  'pentagram-rose', 'heart-tower', 'time-trap', 'crystal-ball', 'dark-squad', 'hand-of-god', 'vortex', 'amphora',
+  'lantern-flame', 'crowned-heart', 'star-formation', 'tombstone',
 ] as const;
 
 const root = join(import.meta.dirname, '..');

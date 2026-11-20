@@ -14,7 +14,7 @@ import {
 import { skipFloors } from './descent';
 import { totalIncome } from './income';
 import { addLog } from './log';
-import { soulFrequencyMultiplier } from './modifiers';
+import { soulBoosted, soulFrequencyMultiplier } from './modifiers';
 import { addBones } from './resources';
 
 export function soulsUnlocked(state: GameState): boolean {
@@ -60,9 +60,10 @@ export function updateEvents(state: GameState, dt: number, offline: boolean): vo
   if (ev.soulCooldown <= 0) spawnSoul(state);
 }
 
-export function applyBuff(state: GameState, id: BuffId): void {
+export function applyBuff(state: GameState, id: BuffId, fromSoul = false): void {
   const current = state.events.buffs[id] ?? 0;
-  state.events.buffs[id] = Math.max(current, BUFFS[id].seconds);
+  const seconds = BUFFS[id].seconds * (fromSoul && soulBoosted(state) ? 2 : 1);
+  state.events.buffs[id] = Math.max(current, seconds);
 }
 
 export interface SoulOutcome {
@@ -82,9 +83,10 @@ export function catchSoul(state: GameState, forced?: SoulReward): SoulOutcome | 
   switch (reward) {
     case 'soulFrenzy':
     case 'bloodMoon': {
-      applyBuff(state, reward);
+      applyBuff(state, reward, true);
       const b = BUFFS[reward];
-      message = `${b.name}! ${b.description.replace(/\.$/, '')} for ${b.seconds} seconds.`;
+      const seconds = Math.round(state.events.buffs[reward] ?? b.seconds);
+      message = `${b.name}! ${b.description.replace(/\.$/, '')} for ${seconds} seconds.`;
       break;
     }
     case 'graveRush': {

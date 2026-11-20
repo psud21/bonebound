@@ -20,6 +20,11 @@ import { clickDamage, siphon } from '../src/systems/siphon';
 import { availableUpgrades, buyUpgrade } from '../src/systems/upgrades';
 import { update } from '../src/systems/tick';
 import { nextFloat } from '../src/engine/rng';
+import { PACT_NODES } from '../src/content/pact';
+import { SPELLS } from '../src/content/spells';
+import { equipBest } from '../src/systems/loot';
+import { castSpell } from '../src/systems/magic';
+import { buyPact, canBuyPact, canRebirth, rebirth } from '../src/systems/prestige';
 
 export interface SimOptions {
   seconds: number;
@@ -37,6 +42,14 @@ export interface SimOptions {
   /** Record a CSV sample every N simulated seconds. */
   sampleEvery: number;
   floorMilestones: readonly number[];
+  /** Rebirth once the deepest floor hasn't improved for this long (0 = never). */
+  rebirthAfterStall: number;
+  /** Stop rebirthing after this many. */
+  maxRebirths: number;
+  /** Equip gear (for measuring how much loot contributes). */
+  useGear: boolean;
+  /** Cast spells manually (auto-cast still works after the Dark Pact node). */
+  useSpells: boolean;
 }
 
 export const DEFAULT_SIM_OPTIONS: SimOptions = {
@@ -49,6 +62,10 @@ export const DEFAULT_SIM_OPTIONS: SimOptions = {
   seed: 1,
   sampleEvery: 60,
   floorMilestones: [10, 20, 25, 30, 40, 50, 60, 70, 75, 80, 90, 100],
+  rebirthAfterStall: 0,
+  maxRebirths: 3,
+  useGear: true,
+  useSpells: true,
 };
 
 export interface Milestone {
@@ -194,6 +211,11 @@ export function runSimulation(partial: Partial<SimOptions> = {}): SimResult {
   let nextAttention = 0;
   let lastChallenge = 0;
   let soulDecided = false;
+  let nextGear = 0;
+  let bestSeen = 1;
+  let bestSeenAt = 0;
+  state.loot.autoSalvage = 'common';
+  const run = () => state.prestige.rebirths + 1;
 
   const mark = (label: string, t: number) => {
     if (seen.has(label)) return;
@@ -260,12 +282,50 @@ export function runSimulation(partial: Partial<SimOptions> = {}): SimResult {
     }
 
     if (t >= nextDecision) {
-      makePurchases(state, opts.attentionSeconds, (label) => mark(`First ${label}`, t));
+      makePurchases(state, opts.attentionSeconds, (label) => {
+        if (run() === 1) mark(`First ${label}`, t);
+      });
+      // An active player casts whatever is ready, buffs first.
+      if (opts.useSpells) {
+        for (const id of ['raiseLegion', 'ossuaryRite', 'boneSpear'] as const) {
+          if (SPELLS.some((sp) => sp.id === id)) castSpell(state, id);
+        }
+      }
       nextDecision += opts.decideEvery;
     }
 
+    if (opts.useGear && t >= nextGear) {
+      equipBest(state);
+      nextGear += 30;
+    }
+
     while (pendingFloors.length > 0 && state.descent.maxFloor >= pendingFloors[0]!) {
-      mark(`Floor ${pendingFloors.shift()}`, t);
+      mark(`Run ${run()}: floor ${pendingFloors.shift()}`, t);
+    }
+
+    if (state.descent.maxFloor > bestSeen) {
+      bestSeen = state.descent.maxFloor;
+      bestSeenAt = t;
+    }
+    if (
+      opts.rebirthAfterStall > 0 &&
+      state.prestige.rebirths < opts.maxRebirths &&
+      canRebirth(state) &&
+      t - bestSeenAt >= opts.rebirthAfterStall
+    ) {
+      const depth = state.descent.maxFloor;
+      const gained = rebirth(state, 0);
+      mark(`Run ${run() - 1} ended at floor ${depth} (+${gained} shards)`, t);
+      // Spend shards: cheapest available node first, repeatedly.
+      for (let guard = 0; guard < 50; guard++) {
+        const next = PACT_NODES.filter((n) => canBuyPact(state, n.id)).sort((a, b) => a.cost - b.cost)[0];
+        if (!next || !buyPact(state, next.id)) break;
+      }
+      state.prestige.autoBuy = true;
+      state.magic.autoCast = true;
+      pendingFloors.splice(0, pendingFloors.length, ...opts.floorMilestones);
+      bestSeen = state.descent.maxFloor;
+      bestSeenAt = t;
     }
   }
 

@@ -41,6 +41,12 @@ export const UNLOCKS: readonly UnlockDef[] = [
     text: 'With Morrow fallen, lost souls begin to drift up from below. Catch one before it fades.',
   },
   {
+    id: 'loot',
+    goal: 'Claim a relic',
+    condition: { kind: 'maxFloor', floor: 11 },
+    text: 'Morrow left something behind: a relic, still warm. Guardians always drop one, and lesser foes sometimes do. Check the Relics tab.',
+  },
+  {
     id: 'wardens',
     goal: 'Bargain with the liches',
     condition: { kind: 'lifetimeBones', amount: 800 },
@@ -53,6 +59,12 @@ export const UNLOCKS: readonly UnlockDef[] = [
     text: 'The whisper from below is clearer now. It knows your name. It seems pleased.',
   },
   {
+    id: 'essence',
+    goal: 'Taste the Essence',
+    condition: { kind: 'maxFloor', floor: 30 },
+    text: 'The air below floor 30 is thick with Essence. Your old spellbook stirs. The School of Bone is open to you: see the Grimoire.',
+  },
+  {
     id: 'floor50',
     goal: 'The carved names',
     condition: { kind: 'maxFloor', floor: 50 },
@@ -62,7 +74,7 @@ export const UNLOCKS: readonly UnlockDef[] = [
     id: 'floor75',
     goal: 'A place to keep your soul',
     condition: { kind: 'maxFloor', floor: 75 },
-    text: 'Your body aches in ways bones should not. The voice promises that death would only be a doorway, if you had somewhere to keep your soul.',
+    text: 'Your body aches in ways bones should not. The voice offers a phylactery: a place to keep your soul. Die, and you will rise again, stronger. The Phylactery tab is open.',
   },
   {
     id: 'floor100',

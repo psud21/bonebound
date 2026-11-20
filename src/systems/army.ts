@@ -2,7 +2,7 @@ import { Decimal } from '../engine/bignum';
 import { bulkCost, maxAffordable } from '../engine/economy';
 import type { BuyAmount, GameState } from '../engine/state';
 import { MINIONS, MINIONS_BY_ID, type MinionDef } from '../content/minions';
-import { minionMultiplier } from './modifiers';
+import { bossDamageMultiplier, minionMultiplier } from './modifiers';
 import { spendBones } from './resources';
 
 function def(id: string): MinionDef {
@@ -40,7 +40,7 @@ export function buyMinion(state: GameState, id: string, amount: BuyAmount): numb
 /** Damage per second of one unit with all multipliers. */
 export function unitDps(state: GameState, id: string, vsBoss = false): Decimal {
   const m = def(id);
-  const boss = vsBoss ? (m.bossDamageMult ?? 1) : 1;
+  const boss = vsBoss ? (m.bossDamageMult ?? 1) * bossDamageMultiplier(state) : 1;
   return new Decimal(m.baseDps).mul(minionMultiplier(state, id) * boss);
 }
 

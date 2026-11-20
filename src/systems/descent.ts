@@ -4,6 +4,9 @@ import { BALANCE } from '../content/balance';
 import { enemyName, isBossFloor } from '../content/layers';
 import { addLog } from './log';
 import { bossTimerSeconds } from './modifiers';
+import { chance } from '../engine/rng';
+import { hasLegendary } from './gear';
+import { rollDrops } from './loot';
 import { gainBones } from './resources';
 
 /** HP of a normal enemy on this floor. */
@@ -51,6 +54,7 @@ export function enterFloor(state: GameState, floor: number): void {
   d.killsOnFloor = 0;
   d.enemyHp = enemyMaxHp(d.floor);
   d.maxFloor = Math.max(d.maxFloor, d.floor);
+  state.prestige.bestFloor = Math.max(state.prestige.bestFloor, d.maxFloor);
   if (isBossFloor(d.floor)) d.bossTimeLeft = bossTimerSeconds(state);
 }
 
@@ -100,6 +104,8 @@ export function dealDamage(state: GameState, amount: Decimal, options: DamageOpt
     result.kills += kills;
     state.stats.totalKills += kills;
 
+    rollDrops(state, floor, kills, isBossFloor(floor));
+
     if (isBossFloor(floor)) {
       state.stats.bossesDefeated += kills;
       result.bossesDefeated += kills;
@@ -111,6 +117,12 @@ export function dealDamage(state: GameState, amount: Decimal, options: DamageOpt
       if (d.killsOnFloor >= perFloor) {
         enterFloor(state, floor + 1);
         result.floorsCleared += 1;
+        // Striders of the Deep: sometimes the next floor falls too.
+        if (options.floorCap === undefined) {
+          for (const e of hasLegendary(state, 'floorSkip')) {
+            if (chance(state.rng, e.chance)) result.floorsCleared += skipFloors(state, 1);
+          }
+        }
         continue;
       }
     } else {

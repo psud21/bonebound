@@ -2,9 +2,9 @@
 
 A dark-fantasy incremental game. See [PLAN.md](PLAN.md) for the full design and roadmap.
 
-**Status:** M1 (Vertical slice) complete: Siphon clicking, 6 minions with milestones, 25 upgrades, the Crypt (4 graveworks + Lich Wardens), Layer 1 with timed bosses, Wandering Souls and buffs, and the Chronicle.
+**Status:** M2 (Loot and Rebirth) complete on top of M1: relics with random stats, legendaries, salvage/reforge/empower, Essence and the School of Bone spells, Phylactery Rebirth with Soul Shards, and the Dark Pact tree.
 
-**Pacing** (`npm run sim`, active player): floor 25 ≈ 8 min, floor 50 ≈ 24 min, floor 75 ≈ 44 min, floor 100 ≈ 1.5 h.
+**Pacing** (`npm run sim -- --hours=4.5 --rebirth=10`, active player): run 1 reaches floor 100 at about 1h24m and rebirths at floor ~110; run 2 reaches floor 100 about 25 minutes in and goes to ~120; run 3 reaches floor 100 in under 10 minutes.
 
 ## Commands
 
@@ -15,7 +15,8 @@ A dark-fantasy incremental game. See [PLAN.md](PLAN.md) for the full design and 
 | `npm test` | Run the unit tests |
 | `npm run check` | Type-check TypeScript and Svelte |
 | `npm run build` | Production build into `dist/` |
-| `npm run sim` | Balance simulator (options: `--hours=4 --cps=0 --seed=7 --attention=10 --souls=0.3`) |
+| `npm run sim` | Balance simulator (options: `--hours=4 --cps=0 --seed=7 --attention=10 --souls=0.3 --rebirth=10 --rebirths=2 --gear=0 --spells=0`) |
+| `npm run icons` | Regenerate the bundled icon subset |
 
 ## Layout
 

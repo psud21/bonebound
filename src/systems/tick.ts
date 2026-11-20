@@ -3,6 +3,8 @@ import { armyDps } from './army';
 import { updateCrypt } from './crypt';
 import { dealDamage, onBossFloor, updateBossTimer } from './descent';
 import { updateEvents } from './events';
+import { updateMagic } from './magic';
+import { autoBuy } from './prestige';
 import { checkUnlocks } from './unlocks';
 
 export interface TickContext {
@@ -25,5 +27,7 @@ export function update(state: GameState, dt: number, ctx: TickContext = {}): voi
   if (!offline) updateBossTimer(state, dt);
 
   updateEvents(state, dt, offline);
+  updateMagic(state, dt);
+  autoBuy(state);
   checkUnlocks(state);
 }
