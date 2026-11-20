@@ -489,7 +489,9 @@ button.row-buy:disabled {
 }
 .milestone {
   position: relative;
-  height: 14px;
+  display: flex;
+  align-items: center;
+  height: 15px;
   margin-top: 3px;
   background: rgba(0, 0, 0, 0.45);
   border-radius: 4px;
@@ -502,6 +504,8 @@ button.row-buy:disabled {
 }
 .milestone-text {
   position: relative;
+  /* The row's own line height is taller than the bar; without this the label is clipped. */
+  line-height: 1;
   font-size: 0.7rem;
   padding-left: 6px;
   color: var(--gold);
