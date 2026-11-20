@@ -154,7 +154,7 @@ describe('simulator', () => {
     const a = runSimulation({ seconds: 600, seed: 3 });
     const b = runSimulation({ seconds: 600, seed: 3 });
     expect(a.milestones).toEqual(b.milestones);
-    expect(a.milestones.map((m) => m.label)).toContain('Floor 10');
+    expect(a.milestones.map((m) => m.label)).toContain('Run 1: floor 10');
     expect(a.state.descent.maxFloor).toBeGreaterThan(10);
   });
 });

@@ -23,6 +23,11 @@
     refresh();
   }
 
+  function toggleAutoBuy() {
+    runtime.state.prestige.autoBuy = !runtime.state.prestige.autoBuy;
+    refresh();
+  }
+
   function setBuyAmount(amount: BuyAmount) {
     runtime.state.settings.buyAmount = amount;
     refresh();
@@ -45,6 +50,12 @@
         </button>
       {/each}
     </div>
+  {/if}
+
+  {#if view.autoBuyOwned}
+    <label class="auto-toggle">
+      <input type="checkbox" checked={view.autoBuy} onchange={toggleAutoBuy} /> Raise minions automatically
+    </label>
   {/if}
 
   {#if view.upgrades.length > 0 || view.lockedUpgrades.length > 0}

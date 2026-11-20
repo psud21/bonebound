@@ -26,6 +26,8 @@ import { clickDamage } from '../systems/siphon';
 import { availableUpgrades } from '../systems/upgrades';
 import { isUnlocked } from '../systems/unlocks';
 import type { IconName } from './icons.generated';
+import { buildGrimoire, buildPhylactery, buildRelics } from './sections';
+import { hasPact } from '../systems/prestige';
 
 /** How many locked items are previewed by name before the rest show as "???". */
 const PREVIEW_LOCKED = 2;
@@ -177,9 +179,15 @@ export function buildView(state: GameState) {
     ratio: progress.ratio,
   }));
 
+  const BUFF_ICONS: Record<BuffId, IconName> = {
+    soulFrenzy: 'soul',
+    bloodMoon: 'evil-moon',
+    raiseLegion: 'rally-the-troops',
+    ossuaryRite: 'skeleton-inside',
+  };
   const buffs = (Object.keys(state.events.buffs) as BuffId[]).map((id) => ({
     id,
-    icon: (id === 'bloodMoon' ? 'evil-moon' : 'soul') as IconName,
+    icon: BUFF_ICONS[id],
     name: BUFFS[id].name,
     description: BUFFS[id].description,
     timeLeft: Math.ceil(state.events.buffs[id] ?? 0),
@@ -233,6 +241,12 @@ export function buildView(state: GameState) {
     depthBonus: depthBonus(state).toFixed(2),
     buyAmount,
     notation: n,
+    relics: buildRelics(state),
+    grimoire: buildGrimoire(state),
+    phylactery: buildPhylactery(state),
+    autoBuyOwned: hasPact(state, 'autoRaise'),
+    autoBuy: state.prestige.autoBuy,
+    shardsEarned: state.prestige.shardsEarned,
     stats: {
       playTime: formatDuration(state.meta.playTimeSeconds),
       lastSavedAt: state.meta.lastSavedAt,

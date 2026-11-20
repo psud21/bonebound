@@ -4,7 +4,7 @@
 export const BALANCE = {
   /** Enemy HP on floor f is FLOOR_HP_BASE × FLOOR_HP_GROWTH^f. */
   FLOOR_HP_BASE: 10,
-  FLOOR_HP_GROWTH: 1.2,
+  FLOOR_HP_GROWTH: 1.22,
   /** Enemies to kill before the next floor opens (boss floors have one enemy). */
   KILLS_PER_FLOOR: 5,
   /** Bosses have this many times a normal enemy's HP. */
@@ -12,7 +12,7 @@ export const BALANCE = {
   /** Seconds to defeat a boss before being pushed back a floor. */
   BOSS_TIMER_SECONDS: 30,
   /** Bones awarded per point of enemy max HP on kill, on floor 1. */
-  BONES_PER_HP: 0.08,
+  BONES_PER_HP: 0.055,
   /** Bones per HP shrinks by this factor each floor, so deeper floors pay less per hit. */
   BONES_PER_HP_DECAY: 0.98,
   /** Damage of one Siphon click before upgrades. */

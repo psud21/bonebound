@@ -163,6 +163,7 @@ Production buildings that work like AdVenture Capitalist businesses:
 - **Salvaging** turns items into Bone Dust. You can use it to reroll one stat or upgrade an item's power. **Auto-salvage filters** (by rarity, or keep only upgrades) keep the inventory from becoming a chore.
 - **Sockets and Gems:** Ruby (damage), Emerald (Bones), Amethyst (Essence), Diamond (all).
 - **Gear persists through Rebirth.** It's the long-term chase. Deeper floors drop higher item levels.
+- **Depth cap (M2 tuning):** an item performs at no more than your deepest floor this run + 10, so end-game relics don't flatten the early floors of a new run. Rarity, stats and legendary powers still carry over in full.
 
 ### 5.7 Essence and spells
 Spells are timed buffs or instant effects that cost Essence and have cooldowns. Auto-casting unlocks later. Each spell belongs to one of four **Schools of Necromancy**:
@@ -190,7 +191,7 @@ Spells are timed buffs or instant effects that cost Essence and have cooldowns. 
 - **Resets:** Bones, minions, graveworks, floors and Essence.
 - **Keeps:** gear, school levels (at a reduced rate), research and achievements.
 - **Gain:** `shards = floor((maxFloor − 50)^1.5 / 10)`. That's about 35 at floor 100 and about 180 at floor 200.
-- **Each Soul Shard** gives +2% to all output. You can spend them in the **Dark Pact** tree, which boosts the early game hard:
+- **Each Soul Shard** ever earned gives +2% army damage. (M2 tuning: damage only, since boosting Bones too compounded into a trivial second run.) You can spend them in the **Dark Pact** tree, which boosts the early game hard:
   - Start at floor 10, 25 or 50
   - Auto-buy minions
   - Keep Lich Wardens through Rebirth
@@ -297,7 +298,7 @@ tests/
 |---|---|---|
 | **M0 Foundation** (wk 1) ✅ | Loop, state, save/load and migrations, number library and formatting, seeded RNG, simulator skeleton | A save survives a reload. Math tests pass. |
 | **M1 Vertical slice** (wk 2–3) ✅ | Siphon, 6 minions, 4 graveworks with Lich Wardens, Layer 1 (floors 1–100), boss timers, Wandering Soul | 45+ minutes of fun play with tuned pacing |
-| **M2 Loot and Rebirth** (wk 4–6) | Item slots, rarities, random stats, salvage, Essence and Bone school, Phylactery Rebirth and Dark Pact tree, offline progress | A full loop into a noticeably faster second run |
+| **M2 Loot and Rebirth** (wk 4–6) ✅ | Item slots, rarities, random stats, salvage, Essence and Bone school, Phylactery Rebirth and Dark Pact tree, offline progress | A full loop into a noticeably faster second run |
 | **M3 Depth** (wk 7–9) | All 4 schools, Covens, Forbidden Library, Layers 2–4, legendaries and sets, Elite minions, achievements, story | 5+ hours of content |
 | **M4 Endgame** (wk 10–12) | Rifts, Curses, Gems and sockets, Layers 5–7, Lichdom and Dark Levels | Week-long progression simulated |
 | **M5 Polish and launch** (wk 13+) | Art and audio pass, tutorial hints, playtests, itch.io release | External testers reach their first Rebirth without help |

@@ -1,6 +1,9 @@
 import { fromJson, mergeDefaults, toJson } from './serialize';
 import { migrate, type RawSave } from './migrations';
-import { createInitialState, type BuyAmount, type GameState } from './state';
+import { createInitialState, type BuyAmount, type GameState, type Item, type ItemAffix } from './state';
+import { EQUIP_SLOTS, ITEM_KINDS, RARITIES, kindForSlot, type EquipSlot, type ItemKind, type Rarity } from '../content/loot';
+import { PACT_BY_ID } from '../content/pact';
+import { SPELLS_BY_ID, type SpellId } from '../content/spells';
 import type { Notation } from './format';
 import { enemyMaxHp, killsForFloor } from '../systems/descent';
 import { bossTimerSeconds } from '../systems/modifiers';
@@ -114,7 +117,65 @@ function sanitize(state: GameState, raw: RawSave): GameState {
   for (const [id, value] of Object.entries(state.unlocks)) {
     if (value !== true) delete state.unlocks[id];
   }
+
+  // Loot: drop anything that isn't a well-formed item.
+  const loot = state.loot;
+  loot.inventory = Array.isArray(loot.inventory) ? loot.inventory.filter(isItem) : [];
+  const equipped: Partial<Record<EquipSlot, Item>> = {};
+  for (const slot of EQUIP_SLOTS) {
+    const item = (loot.equipped as Record<string, unknown>)[slot];
+    if (isItem(item) && item.kind === kindForSlot(slot)) equipped[slot] = item;
+  }
+  loot.equipped = equipped;
+  const maxId = Math.max(0, ...loot.inventory.map((i) => i.id), ...Object.values(equipped).map((i) => i!.id));
+  loot.nextId = Math.max(cleanCount(loot.nextId), maxId + 1);
+  loot.dust = cleanCount(loot.dust);
+  loot.unseen = cleanCount(loot.unseen);
+  if (!['none', ...RARITIES].includes(loot.autoSalvage)) loot.autoSalvage = 'none';
+
+  // Magic
+  const magic = state.magic;
+  if (!Number.isFinite(magic.essence) || magic.essence < 0) magic.essence = 0;
+  for (const [id, left] of Object.entries(magic.cooldowns)) {
+    if (!SPELLS_BY_ID[id as SpellId] || typeof left !== 'number' || !Number.isFinite(left) || left <= 0) {
+      delete magic.cooldowns[id as SpellId];
+    }
+  }
+  for (const school of Object.values(magic.schools)) {
+    school.level = cleanCount(school.level);
+    if (!Number.isFinite(school.xp) || school.xp < 0) school.xp = 0;
+  }
+  magic.autoCast = magic.autoCast === true;
+
+  // Prestige
+  const p = state.prestige;
+  p.shards = cleanCount(p.shards);
+  p.shardsEarned = Math.max(cleanCount(p.shardsEarned), p.shards);
+  p.rebirths = cleanCount(p.rebirths);
+  p.pact = Array.isArray(p.pact) ? [...new Set(p.pact.filter((id): id is string => typeof id === 'string' && !!PACT_BY_ID[id]))] : [];
+  p.autoBuy = p.autoBuy === true;
+  p.bestFloor = Math.max(cleanCount(p.bestFloor), d.maxFloor, 1);
+  if (!Number.isFinite(p.runStartedAt) || p.runStartedAt < 0) p.runStartedAt = 0;
   return state;
+}
+
+function isItem(value: unknown): value is Item {
+  if (typeof value !== 'object' || value === null) return false;
+  const i = value as Record<string, unknown>;
+  const affixOk = (a: unknown) =>
+    typeof a === 'object' && a !== null && typeof (a as ItemAffix).stat === 'string' && typeof (a as ItemAffix).roll === 'number';
+  return (
+    typeof i.id === 'number' &&
+    ITEM_KINDS.includes(i.kind as ItemKind) &&
+    RARITIES.includes(i.rarity as Rarity) &&
+    typeof i.level === 'number' &&
+    typeof i.name === 'string' &&
+    affixOk(i.implicit) &&
+    Array.isArray(i.affixes) &&
+    i.affixes.every(affixOk) &&
+    (i.legendary === null || typeof i.legendary === 'string') &&
+    (typeof i.empowered === 'number' || i.empowered === undefined)
+  );
 }
 
 function cleanCount(value: unknown): number {

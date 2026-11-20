@@ -24,7 +24,7 @@ export const GRAVEWORKS: readonly GraveworksDef[] = [
     baseCost: 30,
     costGrowth: 1.07,
     cycleSeconds: 2,
-    revenue: 0.35,
+    revenue: 0.245,
     warden: { name: 'Warden Mossjaw', cost: 1_000, quirk: 'Hums while digging. Nobody asked.' },
   },
   {
@@ -35,7 +35,7 @@ export const GRAVEWORKS: readonly GraveworksDef[] = [
     baseCost: 600,
     costGrowth: 1.12,
     cycleSeconds: 6,
-    revenue: 12,
+    revenue: 8.4,
     warden: { name: 'Warden Sallow', cost: 18_000, quirk: 'Smells faintly of cloves and regret.' },
   },
   {
@@ -46,7 +46,7 @@ export const GRAVEWORKS: readonly GraveworksDef[] = [
     baseCost: 12_000,
     costGrowth: 1.13,
     cycleSeconds: 20,
-    revenue: 330,
+    revenue: 231,
     warden: { name: 'Warden Calcine', cost: 350_000, quirk: 'Keeps a ledger of every femur.' },
   },
   {
@@ -57,7 +57,7 @@ export const GRAVEWORKS: readonly GraveworksDef[] = [
     baseCost: 250_000,
     costGrowth: 1.14,
     cycleSeconds: 60,
-    revenue: 10_000,
+    revenue: 7000,
     warden: { name: 'Warden Vesper', cost: 6_000_000, quirk: 'Insists the fountain is "decorative."' },
   },
 ];

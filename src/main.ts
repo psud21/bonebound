@@ -4,6 +4,7 @@ import '@fontsource/cinzel/700.css';
 import '@fontsource/eb-garamond/400.css';
 import '@fontsource/eb-garamond/400-italic.css';
 import './app.css';
+import './panels.css';
 import App from './App.svelte';
 import { GameRuntime } from './game';
 import { startRenderClock } from './ui/frame.svelte';
@@ -32,6 +33,10 @@ startRenderClock();
 
 if (import.meta.env.DEV) {
   (window as unknown as { __game: GameRuntime }).__game = runtime;
+  // Console helpers for testing later content, e.g. __dev.loot.generateItem(__game.state, 80, 'legendary')
+  void Promise.all([import('./systems/loot'), import('./systems/descent')]).then(([loot, descent]) => {
+    (window as unknown as { __dev: unknown }).__dev = { loot, descent };
+  });
 }
 
 mount(App, { target: document.getElementById('app')!, props: { runtime } });

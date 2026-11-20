@@ -1,4 +1,4 @@
-export type BuffId = 'soulFrenzy' | 'bloodMoon';
+export type BuffId = 'soulFrenzy' | 'bloodMoon' | 'raiseLegion' | 'ossuaryRite';
 
 export interface BuffDef {
   id: BuffId;
@@ -10,9 +10,14 @@ export interface BuffDef {
 export const BUFFS: Readonly<Record<BuffId, BuffDef>> = {
   soulFrenzy: { id: 'soulFrenzy', name: 'Soul Frenzy', description: 'All Bones gained ×7.', seconds: 30 },
   bloodMoon: { id: 'bloodMoon', name: 'Blood Moon', description: 'Army damage ×3.', seconds: 20 },
+  raiseLegion: { id: 'raiseLegion', name: 'Raise Legion', description: 'Army damage ×1.5 or more, growing with School of Bone levels.', seconds: 20 },
+  ossuaryRite: { id: 'ossuaryRite', name: 'Ossuary Rite', description: 'Graveworks cycle ×3 faster.', seconds: 30 },
 };
 
-export const BUFF_MULTIPLIERS = { soulFrenzy: 7, bloodMoon: 3 } as const;
+export const BUFF_MULTIPLIERS = { soulFrenzy: 7, bloodMoon: 3, raiseLegion: 2, ossuaryRite: 3 } as const;
+
+/** Buffs that come from Wandering Souls (the Ring of the Restless doubles these). */
+export const SOUL_BUFFS: readonly BuffId[] = ['soulFrenzy', 'bloodMoon'];
 
 export type SoulReward = 'soulFrenzy' | 'bloodMoon' | 'graveRush' | 'boneShower';
 

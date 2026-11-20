@@ -7,7 +7,7 @@
   import Icon from './ui/Icon.svelte';
   import ArmyPanel from './ui/ArmyPanel.svelte';
   import DescentPanel from './ui/DescentPanel.svelte';
-  import CryptPanel from './ui/CryptPanel.svelte';
+  import SidePanel from './ui/SidePanel.svelte';
   import PathAhead from './ui/PathAhead.svelte';
   import Chronicle from './ui/Chronicle.svelte';
   import DebugPanel from './ui/DebugPanel.svelte';
@@ -49,6 +49,13 @@
       </span>
     {/each}
   </div>
+  {#if view.shardsEarned > 0}
+    <div class="resource shards-res" title="Soul Shards to spend (every shard ever earned adds army damage)">
+      <Icon name="soul-vessel" size={22} class="shard-res-icon" />
+      <span class="shard-value">{view.phylactery.shards}</span>
+      <span class="rate">+{view.phylactery.bonusPercent}%</span>
+    </div>
+  {/if}
   <div class="resource" title="Bones">
     <Icon name="crossed-bones" size={28} class="resource-icon" />
     <span class="value" data-testid="bones">{view.bones}</span>
@@ -82,7 +89,7 @@
     <Chronicle log={view.log} />
   </div>
   <div class="column">
-    <CryptPanel {runtime} {view} />
+    <SidePanel {runtime} {view} />
     <PathAhead {view} />
   </div>
 </main>

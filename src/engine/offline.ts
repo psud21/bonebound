@@ -1,7 +1,7 @@
 import type { Decimal } from './bignum';
 import type { GameState } from './state';
-import { BALANCE } from '../content/balance';
 import { enterFloor, isUnbeatenBoss, offlineFloorCap } from '../systems/descent';
+import { offlineCapSeconds } from '../systems/prestige';
 import { update } from '../systems/tick';
 
 export interface OfflineSummary {
@@ -27,7 +27,7 @@ export interface OfflineOptions {
  * already cleared, but never pushes new floors or fights unbeaten bosses while away.
  */
 export function simulateOffline(state: GameState, awaySeconds: number, options: OfflineOptions = {}): OfflineSummary {
-  const cap = options.capSeconds ?? BALANCE.BASE_OFFLINE_CAP_SECONDS;
+  const cap = options.capSeconds ?? offlineCapSeconds(state);
   const maxSteps = options.maxSteps ?? 2000;
   const minStep = options.minStepSeconds ?? 0.05;
 

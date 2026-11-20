@@ -9,6 +9,7 @@
   import { feedback, floatText } from './feedback.svelte';
   import Icon from './Icon.svelte';
   import DepthTrack from './DepthTrack.svelte';
+  import SpellBar from './SpellBar.svelte';
 
   let { runtime, view }: { runtime: GameRuntime; view: GameView } = $props();
 
@@ -17,7 +18,7 @@
 
   function onSiphon() {
     const result = siphon(runtime.state);
-    floatText(`-${formatNumber(result.damage, view.notation)}`, result.kills > 0);
+    floatText(`${result.crit ? 'CRIT ' : ''}-${formatNumber(result.damage, view.notation)}`, result.kills > 0 || result.crit);
     hit = false;
     // Restart the hit animation on every click.
     requestAnimationFrame(() => {
@@ -82,6 +83,8 @@
     <div class="hpfill" style:width={`${view.hpPercent}%`}></div>
     <span class="hptext">{view.enemyHp} / {view.enemyMaxHp}</span>
   </div>
+
+  <SpellBar {runtime} {view} />
 
   {#if view.canChallenge}
     <p class="farm-note">Your army is farming this floor.</p>

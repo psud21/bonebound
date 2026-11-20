@@ -26,8 +26,7 @@
   }
 </script>
 
-<section class="panel crypt" class:crypt-sealed={!view.cryptUnlocked}>
-  <h2 class="panel-title"><Icon name="graveyard" size={22} /> The Crypt</h2>
+<div class="crypt" class:crypt-sealed={!view.cryptUnlocked}>
   {#if !view.cryptUnlocked}
     <p class="locked"><Icon name="padlock" size={14} /> Sealed. {view.cryptUnlock.text} to open it.</p>
     <span class="req-bar"><span style:width={`${view.cryptUnlock.ratio * 100}%`}></span></span>
@@ -110,4 +109,4 @@
       {/each}
     </ul>
   {/if}
-</section>
+</div>

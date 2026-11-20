@@ -66,7 +66,8 @@ export function cycleSeconds(state: GameState, id: string): number {
 /** Bones produced by one completed cycle (all multipliers applied). */
 export function revenuePerCycle(state: GameState, id: string): Decimal {
   const g = def(id);
-  const mult = graveworksRevenueMultiplier(state, id) * cryptMultiplier(state) * bonesMultiplier(state);
+  const warden = state.crypt.graveworks[id]?.warden === true;
+  const mult = graveworksRevenueMultiplier(state, id, warden) * cryptMultiplier(state) * bonesMultiplier(state);
   return new Decimal(g.revenue).mul(graveworksOwned(state, id)).mul(mult);
 }
 
