@@ -2,6 +2,8 @@ import { fromJson, mergeDefaults, toJson } from './serialize';
 import { migrate, type RawSave } from './migrations';
 import { createInitialState, type BuyAmount, type GameState } from './state';
 import type { Notation } from './format';
+import { enemyMaxHp, killsForFloor } from '../systems/descent';
+import { bossTimerSeconds } from '../systems/modifiers';
 
 const SAVE_PREFIX = 'BB1:';
 export const SAVE_KEY = 'bonebound.save';
@@ -62,17 +64,61 @@ function sanitize(state: GameState, raw: RawSave): GameState {
   if (!Number.isFinite(d.floor) || d.floor < 1) d.floor = 1;
   d.floor = Math.floor(d.floor);
   d.maxFloor = Math.max(d.floor, Number.isFinite(d.maxFloor) ? Math.floor(d.maxFloor) : 1);
-  if (!Number.isFinite(d.killsOnFloor) || d.killsOnFloor < 0) d.killsOnFloor = 0;
+  if (!Number.isFinite(d.killsOnFloor) || d.killsOnFloor < 0 || d.killsOnFloor >= killsForFloor(d.floor)) {
+    d.killsOnFloor = 0;
+  }
+  const maxHp = enemyMaxHp(d.floor);
+  const rawDescent = (raw.descent ?? {}) as Record<string, unknown>;
+  if (!('enemyHp' in rawDescent) || d.enemyHp.lte(0) || d.enemyHp.gt(maxHp)) d.enemyHp = maxHp;
+  if (!Number.isFinite(d.bossTimeLeft) || d.bossTimeLeft <= 0) d.bossTimeLeft = bossTimerSeconds(state);
+
   for (const [id, entry] of Object.entries(state.army.minions)) {
     if (typeof entry !== 'object' || entry === null) {
       state.army.minions[id] = { owned: 0 };
-    } else if (!Number.isFinite(entry.owned) || entry.owned < 0) {
-      entry.owned = 0;
     } else {
-      entry.owned = Math.floor(entry.owned);
+      entry.owned = cleanCount(entry.owned);
     }
   }
+
+  for (const [id, entry] of Object.entries(state.crypt.graveworks)) {
+    if (typeof entry !== 'object' || entry === null) {
+      state.crypt.graveworks[id] = { owned: 0, progress: 0, running: false, warden: false };
+      continue;
+    }
+    entry.owned = cleanCount(entry.owned);
+    if (!Number.isFinite(entry.progress) || entry.progress < 0 || entry.progress >= 1) entry.progress = 0;
+    entry.running = entry.running === true;
+    entry.warden = entry.warden === true;
+  }
+
+  state.upgrades.purchased = Array.isArray(state.upgrades.purchased)
+    ? [...new Set(state.upgrades.purchased.filter((id): id is string => typeof id === 'string'))]
+    : [];
+
+  state.log = Array.isArray(state.log)
+    ? state.log.filter((e) => e && typeof e.text === 'string' && typeof e.at === 'number')
+    : [];
+
+  const ev = state.events;
+  const soul = ev.soul as unknown;
+  if (soul !== null) {
+    const s = soul as Record<string, unknown>;
+    const valid = typeof s === 'object' && [s.timeLeft, s.x, s.y].every((v) => typeof v === 'number' && Number.isFinite(v));
+    if (!valid) ev.soul = null;
+  }
+  if (!Number.isFinite(ev.soulCooldown) || ev.soulCooldown < 0) ev.soulCooldown = 0;
+  for (const [id, left] of Object.entries(ev.buffs)) {
+    if (typeof left !== 'number' || !Number.isFinite(left) || left <= 0) delete ev.buffs[id as keyof typeof ev.buffs];
+  }
+
+  for (const [id, value] of Object.entries(state.unlocks)) {
+    if (value !== true) delete state.unlocks[id];
+  }
   return state;
+}
+
+function cleanCount(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
 }
 
 export type LoadSource = 'main' | 'backup' | 'new';

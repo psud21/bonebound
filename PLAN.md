@@ -295,8 +295,8 @@ tests/
 
 | Milestone | Scope | Done when |
 |---|---|---|
-| **M0 Foundation** (wk 1) | Loop, state, save/load and migrations, number library and formatting, seeded RNG, simulator skeleton | A save survives a reload. Math tests pass. |
-| **M1 Vertical slice** (wk 2–3) | Siphon, 6 minions, 4 graveworks with Lich Wardens, Layer 1 (floors 1–100), boss timers, Wandering Soul | 45+ minutes of fun play with tuned pacing |
+| **M0 Foundation** (wk 1) ✅ | Loop, state, save/load and migrations, number library and formatting, seeded RNG, simulator skeleton | A save survives a reload. Math tests pass. |
+| **M1 Vertical slice** (wk 2–3) ✅ | Siphon, 6 minions, 4 graveworks with Lich Wardens, Layer 1 (floors 1–100), boss timers, Wandering Soul | 45+ minutes of fun play with tuned pacing |
 | **M2 Loot and Rebirth** (wk 4–6) | Item slots, rarities, random stats, salvage, Essence and Bone school, Phylactery Rebirth and Dark Pact tree, offline progress | A full loop into a noticeably faster second run |
 | **M3 Depth** (wk 7–9) | All 4 schools, Covens, Forbidden Library, Layers 2–4, legendaries and sets, Elite minions, achievements, story | 5+ hours of content |
 | **M4 Endgame** (wk 10–12) | Rifts, Curses, Gems and sockets, Layers 5–7, Lichdom and Dark Levels | Week-long progression simulated |

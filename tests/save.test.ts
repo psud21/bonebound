@@ -5,6 +5,7 @@ import { BACKUP_KEY, SAVE_KEY, SaveError, SaveStore, decodeSave, encodeSave, typ
 import { fromJson, mergeDefaults, toJson } from '../src/engine/serialize';
 import { createInitialState, SAVE_VERSION } from '../src/engine/state';
 import { buyMinion } from '../src/systems/army';
+import { enemyMaxHp } from '../src/systems/descent';
 
 function memoryStorage(): SaveStorage & { map: Map<string, string> } {
   const map = new Map<string, string>();
@@ -95,6 +96,33 @@ describe('encode / decode', () => {
     expect(s.army.minions.skeletonWarrior!.owned).toBe(0);
     expect(s.army.minions.ghoul!.owned).toBe(0);
     expect(s.settings).toEqual({ buyAmount: 1, notation: 'short' });
+  });
+});
+
+describe('M0 (v1) saves', () => {
+  it('upgrade to v2 with new systems filled in and enemy HP reset for the new scaling', () => {
+    const v1 = {
+      version: 1,
+      meta: { createdAt: 1, lastActiveAt: 2, lastSavedAt: 3, playTimeSeconds: 400 },
+      rng: { state: 12345 },
+      resources: { bones: { __d: '5000' } },
+      army: { minions: { skeletonWarrior: { owned: 30 }, skeletalArcher: { owned: 4 }, ghoul: { owned: 0 } } },
+      descent: { floor: 20, maxFloor: 22, killsOnFloor: 3, enemyHp: { __d: '7' } },
+      stats: { lifetimeBones: { __d: '90000' }, totalKills: 500, totalClicks: 800 },
+      settings: { notation: 'short', buyAmount: 10 },
+    };
+    const s = decodeSave('BB1:' + btoa(JSON.stringify(v1)));
+    expect(s.version).toBe(SAVE_VERSION);
+    expect(s.resources.bones.eq(5000)).toBe(true);
+    expect(s.army.minions.skeletonWarrior!.owned).toBe(30);
+    expect(s.army.minions.boneMage!.owned).toBe(0);
+    expect(s.crypt.graveworks.shallowGraves).toEqual({ owned: 0, progress: 0, running: false, warden: false });
+    expect(s.upgrades.purchased).toEqual([]);
+    expect(s.descent.autoAdvance).toBe(true);
+    expect(s.descent.enemyHp.eq(enemyMaxHp(20))).toBe(true);
+    expect(s.descent.killsOnFloor).toBe(0); // floor 20 is a boss floor: one enemy
+    expect(s.stats.bossesDefeated).toBe(0);
+    expect(s.settings.buyAmount).toBe(10);
   });
 });
 

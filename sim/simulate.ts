@@ -1,15 +1,38 @@
+import { Decimal } from '../src/engine/bignum';
 import { createInitialState, type GameState } from '../src/engine/state';
+import { GRAVEWORKS, GRAVEWORKS_BY_ID } from '../src/content/graveworks';
 import { MINIONS } from '../src/content/minions';
 import { armyDps, buyMinion, ownedCount, purchaseCost } from '../src/systems/army';
-import { siphon } from '../src/systems/siphon';
+import {
+  buyGraveworks,
+  cycleSeconds,
+  graveworksOwned,
+  graveworksPurchaseCost,
+  graveworksRate,
+  hireWarden,
+  startCycle,
+} from '../src/systems/crypt';
+import { challengeBoss, enemyMaxHp } from '../src/systems/descent';
+import { catchSoul } from '../src/systems/events';
+import { armyIncome } from '../src/systems/income';
+import { bossTimerSeconds } from '../src/systems/modifiers';
+import { clickDamage, siphon } from '../src/systems/siphon';
+import { availableUpgrades, buyUpgrade } from '../src/systems/upgrades';
 import { update } from '../src/systems/tick';
+import { nextFloat } from '../src/engine/rng';
 
 export interface SimOptions {
   seconds: number;
   /** Simulated clicks per second (0 = fully idle). */
   clicksPerSecond: number;
+  /** How often the player checks the Crypt to restart manual cycles, in seconds. */
+  attentionSeconds: number;
+  /** Chance the player catches each Wandering Soul. */
+  soulCatchRate: number;
   /** Simulation step in seconds. */
   dt: number;
+  /** How often the player makes purchase decisions, in seconds. */
+  decideEvery: number;
   seed: number;
   /** Record a CSV sample every N simulated seconds. */
   sampleEvery: number;
@@ -19,10 +42,13 @@ export interface SimOptions {
 export const DEFAULT_SIM_OPTIONS: SimOptions = {
   seconds: 2 * 3600,
   clicksPerSecond: 5,
+  attentionSeconds: 4,
+  soulCatchRate: 0.8,
   dt: 0.25,
+  decideEvery: 1,
   seed: 1,
   sampleEvery: 60,
-  floorMilestones: [5, 10, 25, 50, 75, 100, 150, 200],
+  floorMilestones: [10, 20, 25, 30, 40, 50, 60, 70, 75, 80, 90, 100],
 };
 
 export interface Milestone {
@@ -36,6 +62,7 @@ export interface SimSample {
   bones: string;
   lifetimeBones: string;
   dps: string;
+  income: string;
   owned: Record<string, number>;
 }
 
@@ -43,16 +70,115 @@ export interface SimResult {
   state: GameState;
   milestones: Milestone[];
   samples: SimSample[];
+  bossFails: number;
 }
 
-/** Greedy strategy: buy the minion with the best DPS per Bone whenever affordable. */
-export function bestPurchase(state: GameState): string | null {
-  let best: { id: string; value: number } | null = null;
-  for (const m of MINIONS) {
-    const value = m.baseDps / purchaseCost(state, m.id, 1).toNumber();
-    if (!best || value > best.value) best = { id: m.id, value };
+/**
+ * Income the simulated player expects: army income plus Crypt income, with manual
+ * graveworks discounted by how often the player restarts them.
+ */
+export function estimatedIncome(state: GameState, attentionSeconds: number): Decimal {
+  let total = armyIncome(state);
+  for (const g of GRAVEWORKS) {
+    if (graveworksOwned(state, g.id) <= 0) continue;
+    const e = state.crypt.graveworks[g.id]!;
+    const cycle = cycleSeconds(state, g.id);
+    const efficiency = e.warden ? 1 : cycle / (cycle + attentionSeconds / 2);
+    total = total.add(graveworksRate(state, g.id).mul(efficiency));
   }
-  return best?.id ?? null;
+  return total;
+}
+
+interface Candidate {
+  label: string;
+  cost: Decimal;
+  gain: Decimal;
+  buy: () => boolean;
+}
+
+/** Every purchase the player could make, with its estimated income gain. */
+function candidates(state: GameState, attention: number): Candidate[] {
+  const base = estimatedIncome(state, attention);
+  const list: Candidate[] = [];
+  const measure = (apply: () => void, revert: () => void): Decimal => {
+    apply();
+    const after = estimatedIncome(state, attention);
+    revert();
+    return after.sub(base);
+  };
+
+  for (const m of MINIONS) {
+    const entry = state.army.minions[m.id]!;
+    list.push({
+      label: m.name,
+      cost: purchaseCost(state, m.id, 1),
+      gain: measure(
+        () => entry.owned++,
+        () => entry.owned--,
+      ),
+      buy: () => buyMinion(state, m.id, 1) > 0,
+    });
+  }
+
+  if (state.unlocks.crypt) {
+    for (const g of GRAVEWORKS) {
+      const entry = state.crypt.graveworks[g.id]!;
+      list.push({
+        label: g.name,
+        cost: graveworksPurchaseCost(state, g.id, 1),
+        gain: measure(
+          () => entry.owned++,
+          () => entry.owned--,
+        ),
+        buy: () => buyGraveworks(state, g.id, 1) > 0,
+      });
+      if (state.unlocks.wardens && entry.owned > 0 && !entry.warden) {
+        list.push({
+          label: g.warden.name,
+          cost: new Decimal(GRAVEWORKS_BY_ID[g.id]!.warden.cost),
+          gain: measure(
+            () => (entry.warden = true),
+            () => (entry.warden = false),
+          ),
+          buy: () => hireWarden(state, g.id),
+        });
+      }
+    }
+  }
+
+  for (const u of availableUpgrades(state)) {
+    const purchased = state.upgrades.purchased;
+    let gain = measure(
+      () => purchased.push(u.id),
+      () => purchased.pop(),
+    );
+    // Upgrades that don't raise income (boss timer, click power, soul rate) still matter:
+    // value them as if they gave 3% more income.
+    if (gain.lte(0)) gain = base.mul(0.03).add(0.01);
+    list.push({ label: u.name, cost: new Decimal(u.cost), gain, buy: () => buyUpgrade(state, u.id) });
+  }
+  return list;
+}
+
+/**
+ * Greedy strategy: pick the purchase with the shortest "wait + payback" time.
+ * Buys it if affordable; otherwise saves for it. Returns labels of first purchases.
+ */
+export function makePurchases(state: GameState, attention: number, onBuy: (label: string) => void): void {
+  for (let guard = 0; guard < 500; guard++) {
+    const income = Decimal.max(estimatedIncome(state, attention), 0.1);
+    let best: { c: Candidate; score: number } | null = null;
+    for (const c of candidates(state, attention)) {
+      if (c.gain.lte(0)) continue;
+      const wait = Decimal.max(c.cost.sub(state.resources.bones), 0).div(income).toNumber();
+      const payback = c.cost.div(c.gain).toNumber();
+      const score = wait + payback;
+      if (!best || score < best.score) best = { c, score };
+    }
+    if (!best || state.resources.bones.lt(best.c.cost)) return;
+    if (!best.c.buy()) return;
+    onBuy(best.c.label);
+  }
 }
 
 export function runSimulation(partial: Partial<SimOptions> = {}): SimResult {
@@ -61,9 +187,19 @@ export function runSimulation(partial: Partial<SimOptions> = {}): SimResult {
   const milestones: Milestone[] = [];
   const samples: SimSample[] = [];
   const pendingFloors = [...opts.floorMilestones];
-  const firstBuys = new Set<string>();
+  const seen = new Set<string>();
   let clickDebt = 0;
   let nextSample = 0;
+  let nextDecision = 0;
+  let nextAttention = 0;
+  let lastChallenge = 0;
+  let soulDecided = false;
+
+  const mark = (label: string, t: number) => {
+    if (seen.has(label)) return;
+    seen.add(label);
+    milestones.push({ label, seconds: t });
+  };
 
   const record = (t: number) => {
     samples.push({
@@ -72,7 +208,11 @@ export function runSimulation(partial: Partial<SimOptions> = {}): SimResult {
       bones: state.resources.bones.toString(),
       lifetimeBones: state.stats.lifetimeBones.toString(),
       dps: armyDps(state).toString(),
-      owned: Object.fromEntries(MINIONS.map((m) => [m.id, ownedCount(state, m.id)])),
+      income: estimatedIncome(state, opts.attentionSeconds).toString(),
+      owned: Object.fromEntries([
+        ...MINIONS.map((m) => [m.id, ownedCount(state, m.id)] as const),
+        ...GRAVEWORKS.map((g) => [g.id, graveworksOwned(state, g.id)] as const),
+      ]),
     });
   };
 
@@ -87,32 +227,59 @@ export function runSimulation(partial: Partial<SimOptions> = {}): SimResult {
       siphon(state);
       clickDebt -= 1;
     }
+
+    if (t >= nextAttention) {
+      for (const g of GRAVEWORKS) startCycle(state, g.id);
+      nextAttention += opts.attentionSeconds;
+    }
+
+    // Souls: decide once per appearance whether the player notices it.
+    if (state.events.soul) {
+      if (!soulDecided) {
+        soulDecided = true;
+        if (nextFloat({ state: (opts.seed * 7919 + state.stats.soulsCaught * 31 + Math.floor(t)) >>> 0 }) < opts.soulCatchRate) {
+          catchSoul(state);
+          mark('First Wandering Soul caught', t);
+        }
+      }
+    } else {
+      soulDecided = false;
+    }
+
     update(state, opts.dt);
 
-    // Buy as many best-value units as we can afford this step.
-    for (let guard = 0; guard < 1000; guard++) {
-      const id = bestPurchase(state);
-      if (!id || buyMinion(state, id, 1) === 0) break;
-      if (!firstBuys.has(id)) {
-        firstBuys.add(id);
-        const name = MINIONS.find((m) => m.id === id)?.name ?? id;
-        milestones.push({ label: `First ${name}`, seconds: t });
+    // After losing to a boss, challenge again once the army looks strong enough (or every 2 min).
+    if (!state.descent.autoAdvance) {
+      const next = state.descent.floor + 1;
+      const burst = armyDps(state, true).add(clickDamage(state).mul(opts.clicksPerSecond));
+      const ready = burst.mul(bossTimerSeconds(state) * 0.9).gte(enemyMaxHp(next));
+      if (ready || t - lastChallenge > 120) {
+        challengeBoss(state);
+        lastChallenge = t;
       }
     }
 
+    if (t >= nextDecision) {
+      makePurchases(state, opts.attentionSeconds, (label) => mark(`First ${label}`, t));
+      nextDecision += opts.decideEvery;
+    }
+
     while (pendingFloors.length > 0 && state.descent.maxFloor >= pendingFloors[0]!) {
-      milestones.push({ label: `Floor ${pendingFloors.shift()}`, seconds: t });
+      mark(`Floor ${pendingFloors.shift()}`, t);
     }
   }
 
-  return { state, milestones, samples };
+  return { state, milestones, samples, bossFails: state.stats.bossesFailed };
 }
 
 export function samplesToCsv(samples: readonly SimSample[]): string {
-  const ids = MINIONS.map((m) => m.id);
-  const header = ['seconds', 'floor', 'bones', 'lifetimeBones', 'dps', ...ids].join(',');
+  const ids = [...MINIONS.map((m) => m.id), ...GRAVEWORKS.map((g) => g.id)];
+  const header = ['seconds', 'floor', 'bones', 'lifetimeBones', 'dps', 'income', ...ids].join(',');
   const rows = samples.map((s) =>
-    [s.seconds.toFixed(0), s.floor, s.bones, s.lifetimeBones, s.dps, ...ids.map((id) => s.owned[id] ?? 0)].join(','),
+    [s.seconds.toFixed(0), s.floor, s.bones, s.lifetimeBones, s.dps, s.income, ...ids.map((id) => s.owned[id] ?? 0)].join(
+      ',',
+    ),
   );
   return [header, ...rows].join('\n') + '\n';
 }
+

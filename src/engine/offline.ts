@@ -1,6 +1,7 @@
-import { Decimal } from './bignum';
+import type { Decimal } from './bignum';
 import type { GameState } from './state';
 import { BALANCE } from '../content/balance';
+import { enterFloor, isUnbeatenBoss, offlineFloorCap } from '../systems/descent';
 import { update } from '../systems/tick';
 
 export interface OfflineSummary {
@@ -22,8 +23,8 @@ export interface OfflineOptions {
 }
 
 /**
- * Simulates time away in chunks. The army farms up to the deepest floor already reached
- * but never pushes new floors while the player is away.
+ * Simulates time away in chunks. The army farms up to the deepest floor it has
+ * already cleared, but never pushes new floors or fights unbeaten bosses while away.
  */
 export function simulateOffline(state: GameState, awaySeconds: number, options: OfflineOptions = {}): OfflineSummary {
   const cap = options.capSeconds ?? BALANCE.BASE_OFFLINE_CAP_SECONDS;
@@ -36,9 +37,14 @@ export function simulateOffline(state: GameState, awaySeconds: number, options: 
   const floorBefore = state.descent.floor;
 
   if (simulated > 0) {
+    // A boss fight left running can't be won unattended: fall back and farm instead.
+    if (isUnbeatenBoss(state, state.descent.floor)) {
+      state.descent.autoAdvance = false;
+      enterFloor(state, state.descent.floor - 1);
+    }
     const steps = Math.max(1, Math.min(maxSteps, Math.ceil(simulated / minStep)));
     const dt = simulated / steps;
-    const floorCap = state.descent.maxFloor;
+    const floorCap = offlineFloorCap(state);
     for (let i = 0; i < steps; i++) update(state, dt, { offline: true, floorCap });
   }
 

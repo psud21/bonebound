@@ -1,4 +1,8 @@
 import { mount } from 'svelte';
+import '@fontsource/cinzel/600.css';
+import '@fontsource/cinzel/700.css';
+import '@fontsource/eb-garamond/400.css';
+import '@fontsource/eb-garamond/400-italic.css';
 import './app.css';
 import App from './App.svelte';
 import { GameRuntime } from './game';
