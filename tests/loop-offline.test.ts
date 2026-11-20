@@ -3,6 +3,7 @@ import { GameLoop } from '../src/engine/loop';
 import { simulateOffline } from '../src/engine/offline';
 import { createInitialState } from '../src/engine/state';
 import { update } from '../src/systems/tick';
+import { enterFloor } from '../src/systems/descent';
 
 describe('GameLoop', () => {
   function makeLoop() {
@@ -48,10 +49,17 @@ describe('simulateOffline', () => {
   }
 
   it('gives about the same Bones as playing live for the same time', () => {
-    const live = armed();
+    // Both farm floor 5 so live boss fights can't make the runs diverge.
+    const farming = () => {
+      const s = armed();
+      s.descent.maxFloor = 5;
+      enterFloor(s, 5);
+      s.descent.autoAdvance = false;
+      return s;
+    };
+    const live = farming();
     for (let i = 0; i < 20 * 300; i++) update(live, 0.05); // 5 minutes of live ticks
-    const away = armed();
-    away.descent.maxFloor = live.descent.maxFloor; // allow it to reach the same depth
+    const away = farming();
     simulateOffline(away, 300);
     const ratio = away.stats.lifetimeBones.div(live.stats.lifetimeBones).toNumber();
     expect(ratio).toBeGreaterThan(0.98);
@@ -66,6 +74,24 @@ describe('simulateOffline', () => {
     expect(s.descent.floor).toBe(3);
     expect(summary.floorsGained).toBe(2);
     expect(summary.kills).toBeGreaterThan(0);
+  });
+
+  it('retreats from an unbeaten boss instead of fighting it unattended', () => {
+    const s = armed();
+    s.descent.maxFloor = 9;
+    enterFloor(s, 10);
+    simulateOffline(s, 600);
+    expect(s.descent.floor).toBe(9);
+    expect(s.descent.autoAdvance).toBe(false);
+    expect(s.stats.bossesFailed).toBe(0); // a retreat, not a recorded loss
+  });
+
+  it('lets Warden-run graveworks produce while away', () => {
+    const s = createInitialState(0, 1);
+    s.crypt.graveworks.shallowGraves!.owned = 10;
+    s.crypt.graveworks.shallowGraves!.warden = true;
+    const summary = simulateOffline(s, 600);
+    expect(summary.bonesGained.gt(0)).toBe(true);
   });
 
   it('respects the cap and stays fast for very long absences', () => {

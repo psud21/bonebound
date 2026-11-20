@@ -5,11 +5,20 @@ export type RawSave = Record<string, unknown> & { version?: number };
 
 /**
  * Migrations keyed by the version they upgrade FROM.
- * Example for a future change:
- *   1: (s) => ({ ...s, version: 2, crypt: { graveworks: {} } }),
+ * New fields with defaults don't need a migration (mergeDefaults fills them);
+ * use migrations for renames, moved data and changed meanings.
  * Never edit a migration after release; add a new one.
  */
-export const MIGRATIONS: Readonly<Record<number, (save: RawSave) => RawSave>> = {};
+export const MIGRATIONS: Readonly<Record<number, (save: RawSave) => RawSave>> = {
+  // v1 → v2 (M1): crypt, upgrades, events, unlocks, log and boss fields are new, so
+  // defaults fill them. Enemy HP scaling changed, so drop the stored enemy HP;
+  // sanitize() then sets it to the full HP of the current floor.
+  1: (s) => {
+    const descent = { ...((s.descent ?? {}) as Record<string, unknown>) };
+    delete descent.enemyHp;
+    return { ...s, descent };
+  },
+};
 
 export class SaveVersionError extends Error {}
 

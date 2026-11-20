@@ -2,6 +2,7 @@ import { Decimal } from '../engine/bignum';
 import { bulkCost, maxAffordable } from '../engine/economy';
 import type { BuyAmount, GameState } from '../engine/state';
 import { MINIONS, MINIONS_BY_ID, type MinionDef } from '../content/minions';
+import { minionMultiplier } from './modifiers';
 import { spendBones } from './resources';
 
 function def(id: string): MinionDef {
@@ -36,12 +37,24 @@ export function buyMinion(state: GameState, id: string, amount: BuyAmount): numb
   return count;
 }
 
-export function minionDps(state: GameState, id: string): Decimal {
-  return new Decimal(def(id).baseDps).mul(ownedCount(state, id));
+/** Damage per second of one unit with all multipliers. */
+export function unitDps(state: GameState, id: string, vsBoss = false): Decimal {
+  const m = def(id);
+  const boss = vsBoss ? (m.bossDamageMult ?? 1) : 1;
+  return new Decimal(m.baseDps).mul(minionMultiplier(state, id) * boss);
 }
 
-export function armyDps(state: GameState): Decimal {
+export function minionDps(state: GameState, id: string, vsBoss = false): Decimal {
+  return unitDps(state, id, vsBoss).mul(ownedCount(state, id));
+}
+
+export function armyDps(state: GameState, vsBoss = false): Decimal {
   let total = new Decimal(0);
-  for (const m of MINIONS) total = total.add(minionDps(state, m.id));
+  for (const m of MINIONS) total = total.add(minionDps(state, m.id, vsBoss));
   return total;
+}
+
+/** A minion is shown once the player has earned a fraction of its price, or owns one. */
+export function minionVisible(state: GameState, id: string): boolean {
+  return ownedCount(state, id) > 0 || state.stats.lifetimeBones.gte(def(id).baseCost * 0.4);
 }

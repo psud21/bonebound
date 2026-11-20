@@ -21,6 +21,8 @@ function parseArgs(argv: string[]): Partial<SimOptions> {
     if (key === 'cps') out.clicksPerSecond = value;
     if (key === 'seed') out.seed = value;
     if (key === 'dt') out.dt = value;
+    if (key === 'attention') out.attentionSeconds = value;
+    if (key === 'souls') out.soulCatchRate = value;
   }
   return out;
 }
@@ -38,8 +40,12 @@ console.table(result.milestones.map((m) => ({ milestone: m.label, time: formatDu
 
 const s = result.state;
 console.log(
-  `End: floor ${s.descent.floor}, ${formatNumber(s.resources.bones)} Bones, ` +
+  `End: floor ${s.descent.floor} (deepest ${s.descent.maxFloor}), ${formatNumber(s.resources.bones)} Bones, ` +
     `${formatNumber(armyDps(s))} DPS, ${formatNumber(s.stats.lifetimeBones)} lifetime Bones`,
+);
+console.log(
+  `Bosses: ${s.stats.bossesDefeated} defeated, ${result.bossFails} failed · Souls caught: ${s.stats.soulsCaught} · ` +
+    `Upgrades: ${s.upgrades.purchased.length}`,
 );
 
 const outDir = join(import.meta.dirname, 'out');

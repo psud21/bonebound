@@ -1,6 +1,9 @@
 import type { GameState } from '../engine/state';
 import { armyDps } from './army';
-import { dealDamage } from './descent';
+import { updateCrypt } from './crypt';
+import { dealDamage, onBossFloor, updateBossTimer } from './descent';
+import { updateEvents } from './events';
+import { checkUnlocks } from './unlocks';
 
 export interface TickContext {
   /** True while simulating time the player was away. */
@@ -12,8 +15,15 @@ export interface TickContext {
 /** Advances the whole game by `dt` seconds. Pure logic: no DOM, no clock. */
 export function update(state: GameState, dt: number, ctx: TickContext = {}): void {
   if (dt <= 0) return;
-  if (!ctx.offline) state.meta.playTimeSeconds += dt;
+  const offline = ctx.offline === true;
+  if (!offline) state.meta.playTimeSeconds += dt;
 
-  const dps = armyDps(state);
+  updateCrypt(state, dt);
+
+  const dps = armyDps(state, onBossFloor(state));
   if (dps.gt(0)) dealDamage(state, dps.mul(dt), { floorCap: ctx.floorCap });
+  if (!offline) updateBossTimer(state, dt);
+
+  updateEvents(state, dt, offline);
+  checkUnlocks(state);
 }
