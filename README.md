@@ -2,6 +2,8 @@
 
 A dark-fantasy incremental game. See [PLAN.md](PLAN.md) for the full design and roadmap.
 
+**Play it:** https://psud21.github.io/bonebound/ (rebuilt from `main` on every push, once the tests pass). Saves stay in each player's browser; use Export and Import under **Settings, saves & stats** to move one.
+
 **Status:** M5 (Polish) on top of M1–M4: synthesized sound effects, first-time tutorial hints, keyboard shortcuts, reduce-motion and volume settings, loot and crit flashes, and an itch.io release package. Before M5, M4 (Endgame) was complete on top of M1–M3. The game now runs to an endless seventh layer, with:
 - gems and sockets
 - Abyssal Rifts
