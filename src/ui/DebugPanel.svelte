@@ -4,6 +4,7 @@
   import type { GameView } from './viewModel';
   import { D } from '../engine/bignum';
   import { spawnSoul } from '../systems/events';
+  import { enterFloor } from '../systems/descent';
   import { refresh } from './frame.svelte';
   import SavePanel from './SavePanel.svelte';
 
@@ -19,6 +20,21 @@
 
   function cheatBones() {
     runtime.state.resources.bones = runtime.state.resources.bones.add(D(1e6)).mul(10);
+    refresh();
+  }
+
+  /** Skips 50 floors ahead (testing deeper layers). */
+  function cheatDive() {
+    const s = runtime.state;
+    s.descent.maxFloor = s.descent.floor + 50;
+    enterFloor(s, s.descent.floor + 50);
+    refresh();
+  }
+
+  function cheatCorpsesLore() {
+    runtime.state.resources.corpses += 500;
+    runtime.state.unlocks.library = true;
+    runtime.state.library.lore += 200;
     refresh();
   }
 
@@ -58,6 +74,8 @@
         <div class="toggle">
           <button onclick={cheatBones}>+Bones ×10</button>
           <button onclick={cheatSoul} data-testid="spawn-soul">Spawn soul</button>
+          <button onclick={cheatDive}>+50 floors</button>
+          <button onclick={cheatCorpsesLore}>+Corpses &amp; Lore</button>
         </div>
         <p class="muted">Next soul in {view.stats.soulCooldown}s · RNG {view.stats.rngState}</p>
       {/if}

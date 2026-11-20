@@ -1,13 +1,15 @@
 import type { IconName } from '../ui/icons.generated';
 import { MINIONS } from './minions';
+import type { LayerHazard } from './layers';
+import type { SchoolId } from './spells';
 
 export type ItemKind = 'staff' | 'offhand' | 'helm' | 'chest' | 'gloves' | 'boots' | 'amulet' | 'ring';
 export type EquipSlot = 'staff' | 'offhand' | 'helm' | 'chest' | 'gloves' | 'boots' | 'amulet' | 'ring1' | 'ring2';
-export type Rarity = 'common' | 'magic' | 'rare' | 'legendary';
+export type Rarity = 'common' | 'magic' | 'rare' | 'set' | 'legendary';
 
 export const EQUIP_SLOTS: readonly EquipSlot[] = ['staff', 'offhand', 'helm', 'chest', 'gloves', 'boots', 'amulet', 'ring1', 'ring2'];
 export const ITEM_KINDS: readonly ItemKind[] = ['staff', 'offhand', 'helm', 'chest', 'gloves', 'boots', 'amulet', 'ring'];
-export const RARITIES: readonly Rarity[] = ['common', 'magic', 'rare', 'legendary'];
+export const RARITIES: readonly Rarity[] = ['common', 'magic', 'rare', 'set', 'legendary'];
 
 export function kindForSlot(slot: EquipSlot): ItemKind {
   return slot === 'ring1' || slot === 'ring2' ? 'ring' : slot;
@@ -67,11 +69,14 @@ export const RARITY_INFO: Readonly<Record<Rarity, { label: string; affixes: [num
   common: { label: 'Common', affixes: [0, 0], mult: 1, dust: 1 },
   magic: { label: 'Magic', affixes: [1, 2], mult: 1.15, dust: 3 },
   rare: { label: 'Rare', affixes: [3, 4], mult: 1.3, dust: 10 },
+  set: { label: 'Set', affixes: [3, 3], mult: 1.4, dust: 25 },
   legendary: { label: 'Legendary', affixes: [3, 3], mult: 1.5, dust: 40 },
 };
 
-export const NORMAL_RARITY_WEIGHTS: Readonly<Record<Rarity, number>> = { common: 62, magic: 28, rare: 9, legendary: 1 };
-export const BOSS_RARITY_WEIGHTS: Readonly<Record<Rarity, number>> = { common: 0, magic: 45, rare: 45, legendary: 10 };
+export const NORMAL_RARITY_WEIGHTS: Readonly<Record<Rarity, number>> = { common: 62, magic: 28, rare: 9, set: 1.5, legendary: 1 };
+export const BOSS_RARITY_WEIGHTS: Readonly<Record<Rarity, number>> = { common: 0, magic: 40, rare: 40, set: 10, legendary: 10 };
+/** Set relics only drop at or below this floor. */
+export const SET_MIN_FLOOR = 101;
 
 /** Chance per normal kill to drop an item, before item find. */
 export const DROP_CHANCE = 0.004;
@@ -85,7 +90,15 @@ export type LegendaryEffect =
   | { kind: 'soulBoost' }
   | { kind: 'wardenMult'; mult: number }
   | { kind: 'bossTimer'; seconds: number }
-  | { kind: 'floorSkip'; chance: number };
+  | { kind: 'floorSkip'; chance: number }
+  | { kind: 'allDamage'; mult: number }
+  | { kind: 'guardianDamage'; mult: number }
+  | { kind: 'clickMult'; mult: number }
+  | { kind: 'ignoreHazard'; hazard: LayerHazard }
+  | { kind: 'corpseMult'; mult: number }
+  | { kind: 'schoolPower'; school: SchoolId; mult: number }
+  | { kind: 'schoolCooldown'; school: SchoolId; mult: number }
+  | { kind: 'noSacrifice' };
 
 export interface LegendaryDef {
   id: string;
@@ -93,6 +106,8 @@ export interface LegendaryDef {
   kind: ItemKind;
   power: string;
   effect: LegendaryEffect;
+  /** Only drops at or below this floor. */
+  minFloor?: number;
 }
 
 export const LEGENDARIES: readonly LegendaryDef[] = [
@@ -152,7 +167,144 @@ export const LEGENDARIES: readonly LegendaryDef[] = [
     power: 'Wandering Souls appear twice as often, and their buffs last twice as long.',
     effect: { kind: 'soulBoost' },
   },
+  // Deeper legendaries (Layer 2 and below)
+  {
+    id: 'tidecallersCenser',
+    name: "Tidecaller's Censer",
+    kind: 'offhand',
+    power: 'Enemies never heal in the Drowned Catacombs.',
+    effect: { kind: 'ignoreHazard', hazard: 'regen' },
+    minFloor: 101,
+  },
+  {
+    id: 'emberCrown',
+    name: 'The Ember Crown',
+    kind: 'helm',
+    power: 'Your minions ignore the Ashen Wastes burn.',
+    effect: { kind: 'ignoreHazard', hazard: 'burn' },
+    minFloor: 101,
+  },
+  {
+    id: 'heartOfTheGlacier',
+    name: 'Heart of the Glacier',
+    kind: 'amulet',
+    power: 'The Weeping Glacier no longer slows your army.',
+    effect: { kind: 'ignoreHazard', hazard: 'slow' },
+    minFloor: 101,
+  },
+  {
+    id: 'golemheartPlate',
+    name: 'Golemheart Plate',
+    kind: 'chest',
+    power: 'Bone Golems deal ×4 damage.',
+    effect: { kind: 'minionMult', id: 'boneGolem', mult: 4 },
+    minFloor: 101,
+  },
+  {
+    id: 'commandersGauntlets',
+    name: "Knight-Commander's Gauntlets",
+    kind: 'gloves',
+    power: 'Death Knights deal ×4 damage.',
+    effect: { kind: 'minionMult', id: 'deathKnight', mult: 4 },
+    minFloor: 101,
+  },
+  {
+    id: 'wailingBand',
+    name: 'The Wailing Band',
+    kind: 'ring',
+    power: 'Banshees deal ×4 damage.',
+    effect: { kind: 'minionMult', id: 'banshee', mult: 4 },
+    minFloor: 101,
+  },
+  {
+    id: 'sanguineScepter',
+    name: 'Sanguine Scepter',
+    kind: 'staff',
+    power: 'Blood Rite no longer sacrifices minions.',
+    effect: { kind: 'noSacrifice' },
+    minFloor: 101,
+  },
+  {
+    id: 'corpsewalkers',
+    name: 'Corpsewalkers',
+    kind: 'boots',
+    power: 'Corpses ×3.',
+    effect: { kind: 'corpseMult', mult: 3 },
+    minFloor: 101,
+  },
 ];
+
+export interface SetDef {
+  id: string;
+  name: string;
+  /** Item names by kind; the set has one piece per listed kind. */
+  pieces: Partial<Record<ItemKind, string>>;
+  /** Bonuses by pieces worn. */
+  bonuses: readonly { pieces: number; text: string; effects: readonly LegendaryEffect[] }[];
+}
+
+export const SETS: readonly SetDef[] = [
+  {
+    id: 'graveLord',
+    name: "Grave Lord's Regalia",
+    pieces: {
+      staff: "Grave Lord's Scepter",
+      helm: "Grave Lord's Crown",
+      chest: "Grave Lord's Mantle",
+      gloves: "Grave Lord's Grasp",
+      boots: "Grave Lord's Procession",
+      amulet: "Grave Lord's Seal",
+    },
+    bonuses: [
+      {
+        pieces: 2,
+        text: 'Skeleton Warriors and Skeletal Archers deal ×4 damage.',
+        effects: [
+          { kind: 'minionMult', id: 'skeletonWarrior', mult: 4 },
+          { kind: 'minionMult', id: 'skeletalArcher', mult: 4 },
+        ],
+      },
+      { pieces: 4, text: 'Army damage ×2.', effects: [{ kind: 'allDamage', mult: 2 }] },
+      { pieces: 6, text: 'Army damage ×3.', effects: [{ kind: 'allDamage', mult: 3 }] },
+    ],
+  },
+  {
+    id: 'plaguebringer',
+    name: "Plaguebringer's Vestments",
+    pieces: {
+      offhand: "Plaguebringer's Censer",
+      helm: "Plaguebringer's Beak",
+      chest: "Plaguebringer's Coat",
+      gloves: "Plaguebringer's Gloves",
+      boots: "Plaguebringer's Galoshes",
+      ring: "Plaguebringer's Signet",
+    },
+    bonuses: [
+      { pieces: 2, text: 'Plague spells ×1.5 power.', effects: [{ kind: 'schoolPower', school: 'plague', mult: 1.5 }] },
+      { pieces: 4, text: 'Enemies never heal.', effects: [{ kind: 'ignoreHazard', hazard: 'regen' }] },
+      { pieces: 6, text: 'Guardians take ×3 damage.', effects: [{ kind: 'guardianDamage', mult: 3 }] },
+    ],
+  },
+  {
+    id: 'bloodsworn',
+    name: 'Bloodsworn Raiment',
+    pieces: {
+      staff: 'Bloodsworn Athame',
+      offhand: 'Bloodsworn Chalice',
+      chest: 'Bloodsworn Vestment',
+      gloves: 'Bloodsworn Wraps',
+      amulet: 'Bloodsworn Locket',
+      ring: 'Bloodsworn Band',
+    },
+    bonuses: [
+      { pieces: 2, text: 'Blood spell cooldowns −30%.', effects: [{ kind: 'schoolCooldown', school: 'blood', mult: 0.7 }] },
+      { pieces: 4, text: 'Siphon ×5.', effects: [{ kind: 'clickMult', mult: 5 }] },
+      { pieces: 6, text: 'Army damage ×2.5.', effects: [{ kind: 'allDamage', mult: 2.5 }] },
+    ],
+  },
+];
+
+export const SETS_BY_ID: Readonly<Record<string, SetDef>> = Object.fromEntries(SETS.map((s) => [s.id, s]));
 
 export const LEGENDARIES_BY_ID: Readonly<Record<string, LegendaryDef>> = Object.fromEntries(
   LEGENDARIES.map((l) => [l.id, l]),

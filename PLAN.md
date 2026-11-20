@@ -90,7 +90,7 @@ Tiers of minions, each with base DPS and a passive trait:
 - **Cost:** `base × r^owned`, with `r` between 1.07 and 1.12.
 - **Bulk buying:** x1, x10, x100 or Max.
 - **Milestones** at 25, 50, 100, 200, 300… owned: double damage, double the attack speed of lower tiers, or unlock a new trait.
-- **Elite minions** cost Corpses and Bones. They're a limited number of strong units with equipment slots, introduced in M3.
+- **Elite minions** cost Corpses. They're a limited number of named champions, each levelled up one at a time (M3: Grave Champion, Ossuary Hierophant, Lich Acolyte, Flesh Colossus). Equipment slots for Elites are deferred to M4 alongside Gems.
 
 ### 5.3 The Crypt (graveworks)
 Production buildings that work like AdVenture Capitalist businesses:
@@ -176,7 +176,8 @@ Spells are timed buffs or instant effects that cost Essence and have cooldowns. 
 | **Shadow** | Curses, crits, Essence | Curse of Frailty, Soul Drain, Eclipse |
 
 - **Schools level up when you cast their spells.** Higher levels mean stronger spells and new spells in that school.
-- **Ultimate spell:** *Army of the Dead*, which needs every school at level 25.
+- **Ultimate spell:** *Army of the Dead*, which needs every school at level 25. (Deferred to M4.)
+- **M3 as built:** Blood opens after the first Rebirth, Plague on reaching the Drowned Catacombs (floor 101), Shadow after the second Rebirth. Each school has three spells, learned at levels 0, 3 and 6.
 
 ### 5.8 Research: the Forbidden Library
 - Spend Lore to start research projects that take real time, from a few minutes up to several hours. The longest are the unlocks you want most.
@@ -299,9 +300,17 @@ tests/
 | **M0 Foundation** (wk 1) ✅ | Loop, state, save/load and migrations, number library and formatting, seeded RNG, simulator skeleton | A save survives a reload. Math tests pass. |
 | **M1 Vertical slice** (wk 2–3) ✅ | Siphon, 6 minions, 4 graveworks with Lich Wardens, Layer 1 (floors 1–100), boss timers, Wandering Soul | 45+ minutes of fun play with tuned pacing |
 | **M2 Loot and Rebirth** (wk 4–6) ✅ | Item slots, rarities, random stats, salvage, Essence and Bone school, Phylactery Rebirth and Dark Pact tree, offline progress | A full loop into a noticeably faster second run |
-| **M3 Depth** (wk 7–9) | All 4 schools, Covens, Forbidden Library, Layers 2–4, legendaries and sets, Elite minions, achievements, story | 5+ hours of content |
+| **M3 Depth** (wk 7–9) ✅ | All 4 schools, Covens, Forbidden Library, Layers 2–4, legendaries and sets, Elite minions, achievements, story | 5+ hours of content |
 | **M4 Endgame** (wk 10–12) | Rifts, Curses, Gems and sockets, Layers 5–7, Lichdom and Dark Levels | Week-long progression simulated |
 | **M5 Polish and launch** (wk 13+) | Art and audio pass, tutorial hints, playtests, itch.io release | External testers reach their first Rebirth without help |
+
+### M3 tuning notes
+
+- **Run 1 stays about an hour to floor 100.** Elites and feats first made it 45% faster, so Elites give +4% per level (Corpse costs ×1.45 per level) and each feat gives +1% army damage.
+- **The Forbidden Library opens at floor 60.** Guardians leave ceil(floor ÷ 20) Lore on their first fall each run; tomes are rarer. Research keeps through Rebirth, so it is the slow, permanent track.
+- **Deeper upgrades remove the floor-150 wall.** Without them every Bones sink was bought by floor ~150 and runs stalled. 34 new upgrades (new minions, Bone Mill and Cathedral of Rot, and global multipliers every 15–20 floors through Layer 4) carry the economy.
+- **Simulated pacing** (`npm run sim -- --hours=8 --rebirth=10 --rebirths=30`, seeds 1–2): Layer 2 from ~1h, Layer 3 at 2.5–5h, Layer 4 at ~7.5h; runs end at floor 140–150, then ~200, then 260–310.
+- **HP growth below floor 100** has its own knobs (`DEEP_HP_GROWTH`, `DEEP_BONES_PER_HP_DECAY`), left equal to Layer 1 for now.
 
 ## 11. Risks and mitigations
 

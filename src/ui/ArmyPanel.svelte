@@ -4,6 +4,7 @@
   import type { GameView } from './viewModel';
   import { buyMinion } from '../systems/army';
   import { buyUpgrade } from '../systems/upgrades';
+  import { raiseElite } from '../systems/elites';
   import { refresh } from './frame.svelte';
   import { toast } from './feedback.svelte';
   import { UPGRADES_BY_ID } from '../content/upgrades';
@@ -20,6 +21,11 @@
 
   function onUpgrade(id: string) {
     if (buyUpgrade(runtime.state, id)) toast(`${UPGRADES_BY_ID[id]?.name}: ${UPGRADES_BY_ID[id]?.description}`);
+    refresh();
+  }
+
+  function onElite(id: string) {
+    raiseElite(runtime.state, id);
     refresh();
   }
 
@@ -150,4 +156,42 @@
       </li>
     {/each}
   </ul>
+
+  {#if view.elites.visible}
+    <h3 class="elites-head">
+      <span>Elites</span>
+      <span class="corpses" title="Corpses: dropped by kills, spent on Elites"><Icon name="raise-zombie" size={16} /> {view.elites.corpses}</span>
+    </h3>
+    <ul class="rows elites">
+      {#each view.elites.list as e (e.id)}
+        <li>
+          {#if e.unlocked}
+            <button class="row-buy elite" disabled={!e.affordable} onclick={() => onElite(e.id)} data-testid={`elite-${e.id}`}>
+              <span class="badge badge-elite"><Icon name={e.icon} size={34} /></span>
+              <span class="row-main">
+                <span class="row-head">
+                  <span class="row-name">{e.name}</span>
+                  <span class="row-owned">Lv {e.level}</span>
+                </span>
+                <span class="row-desc">{e.description}</span>
+                <span class="row-trait">{e.effect}</span>
+                <span class="row-foot">
+                  <span class="cost"><Icon name="raise-zombie" size={12} /> {e.cost} Corpses</span>
+                  <span>next level</span>
+                </span>
+              </span>
+            </button>
+          {:else}
+            <div class="row-buy row-locked">
+              <span class="badge badge-locked"><Icon name={e.icon} size={34} /></span>
+              <span class="row-main">
+                <span class="row-head"><span class="row-name">{e.name}</span><Icon name="padlock" size={16} class="lock-icon" /></span>
+                <span class="req">Reach floor {e.unlockFloor}</span>
+              </span>
+            </div>
+          {/if}
+        </li>
+      {/each}
+    </ul>
+  {/if}
 </section>

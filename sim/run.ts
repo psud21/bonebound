@@ -50,7 +50,11 @@ console.log(
 console.log(
   `Bosses: ${s.stats.bossesDefeated} defeated, ${result.bossFails} failed · Souls caught: ${s.stats.soulsCaught} · ` +
     `Upgrades: ${s.upgrades.purchased.length} · Rebirths: ${s.prestige.rebirths} · Shards: ${s.prestige.shardsEarned} · ` +
-    `Items found: ${s.stats.itemsFound} · Bone level: ${s.magic.schools.bone.level}`,
+    `Items found: ${s.stats.itemsFound} · Schools: ${Object.entries(s.magic.schools).map(([k, v]) => `${k} ${v.level}`).join(', ')}`,
+);
+console.log(
+  `Elites: ${JSON.stringify(s.army.elites)} · Corpses earned: ${Math.round(s.stats.corpsesEarned)} · Lore earned: ${Math.round(s.library.loreEarned)} · ` +
+    `Research: ${s.library.completed.length} · Feats: ${s.feats.length} · Coven: ${s.prestige.coven} · Pact: ${s.prestige.pact.length}`,
 );
 
 const outDir = join(import.meta.dirname, 'out');

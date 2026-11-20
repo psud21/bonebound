@@ -13,7 +13,11 @@ export type PactEffect =
   | { kind: 'clickMult'; mult: number }
   | { kind: 'essence'; maxBonus: number; regenMult: number }
   | { kind: 'bossTimer'; seconds: number }
-  | { kind: 'shardPower'; percent: number };
+  | { kind: 'shardPower'; percent: number }
+  | { kind: 'keepElites'; fraction: number }
+  | { kind: 'researchSpeed'; mult: number }
+  | { kind: 'startCorpses'; amount: number }
+  | { kind: 'shardGain'; mult: number };
 
 export interface PactNode {
   id: string;
@@ -171,6 +175,67 @@ export const PACT_NODES: readonly PactNode[] = [
     requires: ['autoCast', 'lingeringWardens'],
     tier: 3,
     effect: { kind: 'shardPower', percent: 1 },
+  },
+  // Tier 4 (M3)
+  {
+    id: 'corpseHoard',
+    name: 'Corpse Hoard',
+    description: 'Begin each run with 150 Corpses.',
+    icon: 'raise-zombie',
+    cost: 20,
+    requires: ['risenVanguard'],
+    tier: 4,
+    effect: { kind: 'startCorpses', amount: 150 },
+  },
+  {
+    id: 'eliteMemory',
+    name: 'Veterans’ Oath',
+    description: 'Elites keep a quarter of their levels through Rebirth.',
+    icon: 'knight-banner',
+    cost: 40,
+    requires: ['lingeringWardens'],
+    tier: 4,
+    effect: { kind: 'keepElites', fraction: 0.25 },
+  },
+  {
+    id: 'scholarsMark',
+    name: 'The Scholar’s Mark',
+    description: 'Research finishes 50% faster.',
+    icon: 'evil-book',
+    cost: 35,
+    requires: ['autoCast'],
+    tier: 4,
+    effect: { kind: 'researchSpeed', mult: 1.5 },
+  },
+  {
+    id: 'deeperStart',
+    name: 'The Long Fall',
+    description: 'Begin each run on floor 51.',
+    icon: 'stairs',
+    cost: 60,
+    requires: ['abyssalMomentum'],
+    tier: 4,
+    effect: { kind: 'startFloor', floor: 51 },
+  },
+  {
+    id: 'shardHarvest',
+    name: 'Soul Harvest',
+    description: 'Rebirth grants 25% more Soul Shards.',
+    icon: 'soul-vessel',
+    cost: 80,
+    requires: ['phylacteryResonance'],
+    tier: 4,
+    effect: { kind: 'shardGain', mult: 1.25 },
+  },
+  {
+    id: 'drownedPassage',
+    name: 'The Drowned Passage',
+    description: 'Begin each run on floor 101, in the Drowned Catacombs.',
+    icon: 'crypt-entrance',
+    cost: 200,
+    requires: ['deeperStart'],
+    tier: 5,
+    effect: { kind: 'startFloor', floor: 101 },
   },
 ];
 

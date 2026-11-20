@@ -60,6 +60,28 @@ export const GRAVEWORKS: readonly GraveworksDef[] = [
     revenue: 7000,
     warden: { name: 'Warden Vesper', cost: 6_000_000, quirk: 'Insists the fountain is "decorative."' },
   },
+  {
+    id: 'boneMill',
+    icon: 'water-mill',
+    name: 'Bone Mill',
+    description: 'Grinds the old dead into something useful.',
+    baseCost: 8_000_000,
+    costGrowth: 1.15,
+    cycleSeconds: 180,
+    revenue: 320_000,
+    warden: { name: 'Warden Gristle', cost: 150_000_000, quirk: 'Counts every turn of the wheel aloud.' },
+  },
+  {
+    id: 'cathedralOfRot',
+    icon: 'church',
+    name: 'Cathedral of Rot',
+    description: 'A congregation that never leaves, and never stops giving.',
+    baseCost: 300_000_000,
+    costGrowth: 1.16,
+    cycleSeconds: 600,
+    revenue: 18_000_000,
+    warden: { name: 'Warden Hollowmass', cost: 6_000_000_000, quirk: 'Delivers a sermon to the mould every morning.' },
+  },
 ];
 
 export const GRAVEWORKS_BY_ID: Readonly<Record<string, GraveworksDef>> = Object.fromEntries(

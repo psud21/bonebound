@@ -7,10 +7,12 @@
   import RelicsPanel from './RelicsPanel.svelte';
   import GrimoirePanel from './GrimoirePanel.svelte';
   import PhylacteryPanel from './PhylacteryPanel.svelte';
+  import LibraryPanel from './LibraryPanel.svelte';
+  import FeatsPanel from './FeatsPanel.svelte';
 
   let { runtime, view }: { runtime: GameRuntime; view: GameView } = $props();
 
-  type TabId = 'crypt' | 'relics' | 'grimoire' | 'phylactery';
+  type TabId = 'crypt' | 'relics' | 'grimoire' | 'library' | 'phylactery' | 'feats';
   let active = $state<TabId>('crypt');
 
   const tabs = $derived(
@@ -31,11 +33,28 @@
         badge: 0,
       },
       {
+        id: 'library' as const,
+        label: 'Library',
+        icon: 'bookshelf' as IconName,
+        visible: view.library.visible,
+        badge: view.library.busy < view.library.slots && view.library.startable > 0 ? 1 : 0,
+      },
+      {
         id: 'phylactery' as const,
         label: 'Phylactery',
         icon: 'soul-vessel' as IconName,
         visible: view.phylactery.visible,
-        badge: view.phylactery.canRebirth || view.phylactery.affordableNodes > 0 ? 1 : 0,
+        badge:
+          view.phylactery.canRebirth || view.phylactery.affordableNodes > 0 || (view.covens.unlocked && !view.covens.sworn)
+            ? 1
+            : 0,
+      },
+      {
+        id: 'feats' as const,
+        label: 'Feats',
+        icon: 'trophy' as IconName,
+        visible: view.feats.visible,
+        badge: 0,
       },
     ].filter((t) => t.visible),
   );
@@ -68,6 +87,10 @@
       <RelicsPanel {runtime} {view} />
     {:else if current === 'grimoire'}
       <GrimoirePanel {runtime} {view} />
+    {:else if current === 'library'}
+      <LibraryPanel {runtime} {view} />
+    {:else if current === 'feats'}
+      <FeatsPanel {view} />
     {:else}
       <PhylacteryPanel {runtime} {view} />
     {/if}

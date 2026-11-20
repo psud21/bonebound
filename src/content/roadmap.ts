@@ -2,9 +2,9 @@ import type { IconName } from '../ui/icons.generated';
 
 /** Features that exist in the design but not yet in the game, shown as sealed teasers. */
 export const SEALED_FEATURES: readonly { name: string; hint: string; icon: IconName }[] = [
-  { name: 'The Drowned Catacombs', hint: 'Layer 2, where the enemies knit themselves back together.', icon: 'crypt-entrance' },
-  { name: 'Blood, Plague & Shadow', hint: 'Three more schools of necromancy.', icon: 'rune-stone' },
-  { name: 'The Forbidden Library', hint: 'Research that takes hours, and is worth it.', icon: 'evil-book' },
-  { name: 'Covens', hint: 'Choose who you are each time you rise.', icon: 'pentagram-rose' },
+  { name: 'The Flesh Gardens', hint: 'Layer 5, where every enemy brings friends.', icon: 'tentacles-skull' },
+  { name: 'Abyssal Rifts', hint: 'Ten-minute dives for the rarest relics.', icon: 'magic-portal' },
+  { name: 'Gems and Sockets', hint: 'Cut the Abyss into your gear.', icon: 'rune-stone' },
+  { name: 'Curses', hint: 'Make a run harder on purpose, for more reward.', icon: 'cursed-star' },
   { name: 'Lichdom', hint: 'The second death. The deeper reset.', icon: 'crowned-skull' },
 ];

@@ -17,6 +17,8 @@ export function conditionMet(state: GameState, c: AnyCondition): boolean {
       return state.descent.maxFloor >= c.floor;
     case 'clicks':
       return state.stats.totalClicks >= c.count;
+    case 'rebirths':
+      return state.prestige.rebirths >= c.count;
     case 'unlocked':
       return state.unlocks[c.id] === true;
   }

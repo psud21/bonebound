@@ -33,7 +33,7 @@
   }
 </script>
 
-<div class="backdrop" style:--depth={depth} aria-hidden="true"></div>
+<div class="backdrop" data-layer={view.layerNumber} style:--depth={depth} aria-hidden="true"></div>
 
 <header class="topbar">
   <h1 class="brand">
@@ -49,6 +49,12 @@
       </span>
     {/each}
   </div>
+  {#if view.elites.visible}
+    <div class="resource corpses-res" title="Corpses: dropped by kills, spent raising Elites">
+      <Icon name="raise-zombie" size={22} />
+      <span class="corpse-value">{view.elites.corpses}</span>
+    </div>
+  {/if}
   {#if view.shardsEarned > 0}
     <div class="resource shards-res" title="Soul Shards to spend (every shard ever earned adds army damage)">
       <Icon name="soul-vessel" size={22} class="shard-res-icon" />

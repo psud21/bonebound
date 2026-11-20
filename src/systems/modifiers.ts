@@ -1,12 +1,20 @@
 import type { GameState } from '../engine/state';
 import { BALANCE } from '../content/balance';
-import { BUFF_MULTIPLIERS, type BuffId } from '../content/events';
+import { BUFF_MULTIPLIERS } from '../content/events';
 import { GRAVEWORKS_MILESTONES } from '../content/graveworks';
-import { MINION_MILESTONES } from '../content/minions';
+import { MAX_GUARDIAN_SHRED, MINIONS, MINION_MILESTONES } from '../content/minions';
 import { UPGRADES_BY_ID, type Effect } from '../content/upgrades';
+import { buffActive } from './buffs';
+import { covenEffects } from './covens';
+import { eliteArmyDamage, eliteBones, eliteGuardianDamage, eliteGuardianTimer } from './elites';
+import { featMultiplier } from './feats';
 import { gearStat, hasLegendary } from './gear';
-import { raiseLegionMultiplier } from './magic';
+import { burnMultiplier, slowMultiplier } from './hazards';
+import { researchProduct } from './library';
+import { spellBuffValue } from './magic';
 import { pactEffects, shardMultiplier } from './prestige';
+
+export { buffActive };
 
 /** All effects from purchased upgrades. */
 function* effects(state: GameState): Generator<Effect> {
@@ -36,10 +44,6 @@ function sum(state: GameState, match: (e: Effect) => number | null): number {
 
 const pct = (state: GameState, stat: string) => 1 + gearStat(state, stat) / 100;
 
-export function buffActive(state: GameState, id: BuffId): boolean {
-  return (state.events.buffs[id] ?? 0) > 0;
-}
-
 /** Count of thresholds reached in a milestone list. */
 export function milestonesReached(owned: number, thresholds: readonly number[]): number {
   let n = 0;
@@ -52,33 +56,71 @@ export function nextMilestone(owned: number, thresholds: readonly number[]): num
   return null;
 }
 
-/** Multiplier on every minion's damage: upgrades, gear, Soul Shards and buffs. */
+/**
+ * Multiplier on all damage (minions and Siphon's base damage): upgrades, gear, Soul Shards,
+ * Elites, feats, research, covens, set bonuses and buffs.
+ */
 export function allDamageMultiplier(state: GameState): number {
   let m = product(state, (e) => (e.kind === 'allDamageMult' ? e.mult : null));
   m *= pct(state, 'minionDamage') * shardMultiplier(state);
+  m *= eliteArmyDamage(state) * featMultiplier(state) * researchProduct(state, 'minionDamage');
+  m *= covenEffects(state).minionDamage ?? 1;
+  m *= hasLegendary(state, 'allDamage').reduce((x, e) => x * e.mult, 1);
   if (buffActive(state, 'bloodMoon')) m *= BUFF_MULTIPLIERS.bloodMoon;
-  if (buffActive(state, 'raiseLegion')) m *= raiseLegionMultiplier(state);
+  for (const buff of ['raiseLegion', 'bloodRite', 'plagueWind', 'rot', 'eclipse'] as const) {
+    if (buffActive(state, buff)) m *= spellBuffValue(state, buff);
+  }
   return m;
 }
 
-/** Full multiplier for one minion type: milestones × its upgrades × gear × legendaries × global. */
+/** Death Knights strengthen every minion below them. */
+export function lowerTierBoost(state: GameState, id: string): number {
+  const index = MINIONS.findIndex((m) => m.id === id);
+  let boost = 1;
+  for (let i = index + 1; i < MINIONS.length; i++) {
+    const m = MINIONS[i]!;
+    if (m.lowerTierBoost) boost += m.lowerTierBoost * (state.army.minions[m.id]?.owned ?? 0);
+  }
+  return boost;
+}
+
+/** Full multiplier for one minion type: milestones × its upgrades × gear × legendaries × hazards × global. */
 export function minionMultiplier(state: GameState, id: string): number {
   const owned = state.army.minions[id]?.owned ?? 0;
   const milestones = 2 ** milestonesReached(owned, MINION_MILESTONES);
   const own = product(state, (e) => (e.kind === 'minionMult' && e.id === id ? e.mult : null));
   const legendary = hasLegendary(state, 'minionMult').reduce((m, e) => (e.id === id ? m * e.mult : m), 1);
-  return milestones * own * legendary * pct(state, `minion:${id}`) * allDamageMultiplier(state);
+  const burnImmune = MINIONS.find((m) => m.id === id)?.burnImmune === true;
+  const hazards = burnMultiplier(state, burnImmune) * slowMultiplier(state);
+  return (
+    milestones * own * legendary * pct(state, `minion:${id}`) * lowerTierBoost(state, id) * hazards * allDamageMultiplier(state)
+  );
 }
 
 /** Extra multiplier against guardians (on top of minion traits). */
 export function bossDamageMultiplier(state: GameState): number {
-  return pct(state, 'bossDamage');
+  let m = pct(state, 'bossDamage') * eliteGuardianDamage(state) * (covenEffects(state).guardianDamage ?? 1);
+  m *= hasLegendary(state, 'guardianDamage').reduce((x, e) => x * e.mult, 1);
+  if (buffActive(state, 'curseOfFrailty')) m *= spellBuffValue(state, 'curseOfFrailty');
+  return m;
+}
+
+/** Extra multiplier against ordinary enemies. */
+export function normalDamageMultiplier(state: GameState): number {
+  return buffActive(state, 'pestilence') ? spellBuffValue(state, 'pestilence') : 1;
+}
+
+/** Fraction of a guardian's HP that Banshees strip as the fight begins. */
+export function guardianShred(state: GameState): number {
+  let shred = 0;
+  for (const m of MINIONS) if (m.guardianShred) shred += m.guardianShred * (state.army.minions[m.id]?.owned ?? 0);
+  return Math.min(MAX_GUARDIAN_SHRED, shred);
 }
 
 /** Multiplier on every Bone gained from any source. */
 export function bonesMultiplier(state: GameState): number {
   let m = product(state, (e) => (e.kind === 'bonesMult' ? e.mult : null));
-  m *= pct(state, 'bones');
+  m *= pct(state, 'bones') * eliteBones(state) * (covenEffects(state).bones ?? 1);
   if (buffActive(state, 'soulFrenzy')) m *= BUFF_MULTIPLIERS.soulFrenzy;
   return m;
 }
@@ -91,7 +133,10 @@ export function depthBonus(state: GameState): number {
 /** Multiplier on all Crypt output, excluding the global Bones multiplier. */
 export function cryptMultiplier(state: GameState): number {
   return (
-    depthBonus(state) * product(state, (e) => (e.kind === 'cryptMult' ? e.mult : null)) * pct(state, 'crypt')
+    depthBonus(state) *
+    product(state, (e) => (e.kind === 'cryptMult' ? e.mult : null)) *
+    pct(state, 'crypt') *
+    researchProduct(state, 'crypt')
   );
 }
 
@@ -116,9 +161,12 @@ export function clickDpsPercent(state: GameState): number {
   return sum(state, (e) => (e.kind === 'clickDpsPercent' ? e.percent : null));
 }
 
-/** Multiplier on Siphon damage from gear and the Dark Pact. */
+/** Multiplier on Siphon damage from gear, the Dark Pact, set bonuses, covens and Eclipse. */
 export function clickMultiplier(state: GameState): number {
-  return pct(state, 'clickDamage') * pactEffects(state, 'clickMult').reduce((m, e) => m * e.mult, 1);
+  let m = pct(state, 'clickDamage') * pactEffects(state, 'clickMult').reduce((x, e) => x * e.mult, 1);
+  m *= hasLegendary(state, 'clickMult').reduce((x, e) => x * e.mult, 1) * (covenEffects(state).click ?? 1);
+  if (buffActive(state, 'eclipse')) m *= 10 * spellBuffValue(state, 'eclipse', 'click');
+  return m;
 }
 
 export function bossTimerSeconds(state: GameState): number {
@@ -127,7 +175,8 @@ export function bossTimerSeconds(state: GameState): number {
     sum(state, (e) => (e.kind === 'bossTimer' ? e.seconds : null)) +
     gearStat(state, 'bossTimer') +
     hasLegendary(state, 'bossTimer').reduce((s, e) => s + e.seconds, 0) +
-    pactEffects(state, 'bossTimer').reduce((s, e) => s + e.seconds, 0)
+    pactEffects(state, 'bossTimer').reduce((s, e) => s + e.seconds, 0) +
+    eliteGuardianTimer(state)
   );
 }
 

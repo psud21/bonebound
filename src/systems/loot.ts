@@ -11,6 +11,8 @@ import {
   NORMAL_RARITY_WEIGHTS,
   RARITIES,
   RARITY_INFO,
+  SETS,
+  SET_MIN_FLOOR,
   STATS,
   STATS_BY_ID,
   kindForSlot,
@@ -19,7 +21,19 @@ import {
   type Rarity,
 } from '../content/loot';
 import { gearStat, itemScore } from './gear';
+import { researchEffects } from './library';
 import { addLog } from './log';
+
+/** Item find from gear and research, as a multiplier. */
+export function lootFindMultiplier(state: GameState): number {
+  const research = researchEffects(state, 'lootFind').reduce((s, e) => s + e.percent, 0);
+  return 1 + (gearStat(state, 'lootFind') + research) / 100;
+}
+
+/** Legendaries and set pieces are never salvaged automatically. */
+export function isPrecious(item: Item): boolean {
+  return item.legendary !== null || item.set !== null;
+}
 
 export function lootEnabled(state: GameState): boolean {
   return state.descent.maxFloor >= 10 || state.prestige.rebirths > 0;
@@ -50,12 +64,22 @@ function itemName(rng: RngState, kind: ItemKind, rarity: Rarity, affixes: ItemAf
 export function generateItem(state: GameState, level: number, rarity: Rarity, kind?: ItemKind): Item {
   const rng = state.rng;
   let legendary: string | null = null;
+  let set: string | null = null;
+  let setName: string | null = null;
   let itemKind = kind ?? pick(rng, ITEM_KINDS);
   if (rarity === 'legendary') {
-    const options = LEGENDARIES.filter((l) => !kind || l.kind === kind);
-    const def = pick(rng, options.length > 0 ? options : LEGENDARIES);
+    const deepEnough = LEGENDARIES.filter((l) => (l.minFloor ?? 0) <= level);
+    const options = deepEnough.filter((l) => !kind || l.kind === kind);
+    const def = pick(rng, options.length > 0 ? options : deepEnough.length > 0 ? deepEnough : LEGENDARIES);
     legendary = def.id;
     itemKind = def.kind;
+  } else if (rarity === 'set') {
+    const options = SETS.filter((s) => !kind || s.pieces[kind]);
+    const def = pick(rng, options.length > 0 ? options : SETS);
+    const kinds = Object.keys(def.pieces) as ItemKind[];
+    itemKind = kind && def.pieces[kind] ? kind : pick(rng, kinds);
+    set = def.id;
+    setName = def.pieces[itemKind]!;
   }
   const implicitStat =
     KIND_INFO[itemKind].implicit === 'random' ? pick(rng, STATS).id : KIND_INFO[itemKind].implicit;
@@ -63,21 +87,24 @@ export function generateItem(state: GameState, level: number, rarity: Rarity, ki
   const affixes = rollAffixes(rng, rarity, implicitStat);
   const name = legendary
     ? LEGENDARIES.find((l) => l.id === legendary)!.name
-    : itemName(rng, itemKind, rarity, affixes);
-  return { id: state.loot.nextId++, kind: itemKind, rarity, level, name, implicit, affixes, legendary, empowered: 0 };
+    : (setName ?? itemName(rng, itemKind, rarity, affixes));
+  return { id: state.loot.nextId++, kind: itemKind, rarity, level, name, implicit, affixes, legendary, set, empowered: 0 };
 }
 
-function rollRarity(state: GameState, boss: boolean): Rarity {
+function rollRarity(state: GameState, boss: boolean, floor: number): Rarity {
   const weights = boss ? BOSS_RARITY_WEIGHTS : NORMAL_RARITY_WEIGHTS;
-  const find = 1 + gearStat(state, 'lootFind') / 100;
-  // Item find shifts weight from common toward better rarities.
+  const find = lootFindMultiplier(state);
+  // Item find shifts weight from common toward better rarities. Sets only drop deep.
   return weightedPick(
     state.rng,
-    RARITIES.map((r) => ({ value: r, weight: r === 'common' ? weights[r] : weights[r] * find })),
+    RARITIES.filter((r) => r !== 'set' || floor >= SET_MIN_FLOOR).map((r) => ({
+      value: r,
+      weight: r === 'common' ? weights[r] : weights[r] * find,
+    })),
   );
 }
 
-const RANK: Readonly<Record<Rarity, number>> = { common: 0, magic: 1, rare: 2, legendary: 3 };
+const RANK: Readonly<Record<Rarity, number>> = { common: 0, magic: 1, rare: 2, set: 3, legendary: 4 };
 
 function shouldAutoSalvage(setting: AutoSalvage, rarity: Rarity): boolean {
   return setting !== 'none' && RANK[rarity] <= RANK[setting];
@@ -86,14 +113,15 @@ function shouldAutoSalvage(setting: AutoSalvage, rarity: Rarity): boolean {
 /** Adds a found item: auto-salvages it if the filter says so or the bag is full. */
 export function receiveItem(state: GameState, item: Item): 'kept' | 'salvaged' {
   state.stats.itemsFound += 1;
+  if (item.legendary) state.stats.legendariesFound += 1;
   const full = state.loot.inventory.length >= INVENTORY_SIZE;
-  if (item.rarity !== 'legendary' && (shouldAutoSalvage(state.loot.autoSalvage, item.rarity) || full)) {
+  if (!isPrecious(item) && (shouldAutoSalvage(state.loot.autoSalvage, item.rarity) || full)) {
     state.loot.dust += dustValue(item);
     return 'salvaged';
   }
   if (full) {
-    // Never destroy a legendary: salvage the weakest non-legendary to make room.
-    const weakest = [...state.loot.inventory].filter((i) => !i.legendary).sort((a, b) => itemScore(a) - itemScore(b))[0];
+    // Never destroy a legendary or set piece: salvage the weakest ordinary item to make room.
+    const weakest = [...state.loot.inventory].filter((i) => !isPrecious(i)).sort((a, b) => itemScore(a) - itemScore(b))[0];
     if (weakest) salvageItem(state, weakest.id);
     else {
       state.loot.dust += dustValue(item);
@@ -103,6 +131,7 @@ export function receiveItem(state: GameState, item: Item): 'kept' | 'salvaged' {
   state.loot.inventory.push(item);
   state.loot.unseen += 1;
   if (item.rarity === 'legendary') addLog(state, 'loot', `A legendary relic: ${item.name}!`);
+  if (item.rarity === 'set') addLog(state, 'loot', `A set relic: ${item.name}!`);
   return 'kept';
 }
 
@@ -111,18 +140,18 @@ export function rollDrops(state: GameState, floor: number, kills: number, boss: 
   if (!lootEnabled(state) || kills <= 0) return [];
   const dropped: Item[] = [];
   if (boss) {
-    const item = generateItem(state, floor, rollRarity(state, true));
+    const item = generateItem(state, floor, rollRarity(state, true, floor));
     receiveItem(state, item);
     dropped.push(item);
     return dropped;
   }
-  const p = DROP_CHANCE * (1 + gearStat(state, 'lootFind') / 100);
+  const p = DROP_CHANCE * lootFindMultiplier(state);
   const expected = kills * p;
   let count = Math.floor(expected);
   if (chance(state.rng, expected - count)) count += 1;
   count = Math.min(count, MAX_DROPS_PER_BATCH);
   for (let i = 0; i < count; i++) {
-    const item = generateItem(state, floor, rollRarity(state, false));
+    const item = generateItem(state, floor, rollRarity(state, false, floor));
     receiveItem(state, item);
     dropped.push(item);
   }
@@ -150,7 +179,7 @@ export function salvageAll(state: GameState, upTo: Rarity): number {
   const keep: Item[] = [];
   let count = 0;
   for (const item of state.loot.inventory) {
-    if (!item.legendary && RANK[item.rarity] <= RANK[upTo]) {
+    if (!isPrecious(item) && RANK[item.rarity] <= RANK[upTo]) {
       state.loot.dust += dustValue(item);
       count++;
     } else keep.push(item);

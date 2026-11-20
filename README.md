@@ -2,9 +2,9 @@
 
 A dark-fantasy incremental game. See [PLAN.md](PLAN.md) for the full design and roadmap.
 
-**Status:** M2 (Loot and Rebirth) complete on top of M1: relics with random stats, legendaries, salvage/reforge/empower, Essence and the School of Bone spells, Phylactery Rebirth with Soul Shards, and the Dark Pact tree.
+**Status:** M3 (Depth) complete on top of M1 and M2. Layers 2–4 (the Drowned Catacombs, Ashen Wastes and Weeping Glacier, each with a hazard), four more minions and two more graveworks, Corpses and Elites, the Schools of Blood, Plague and Shadow, Covens, the Forbidden Library, set relics and deeper legendaries, 42 feats, and story beats through floor 400.
 
-**Pacing** (`npm run sim -- --hours=4.5 --rebirth=10`, active player): run 1 reaches floor 100 at about 1h24m and rebirths at floor ~110; run 2 reaches floor 100 about 25 minutes in and goes to ~120; run 3 reaches floor 100 in under 10 minutes.
+**Pacing** (`npm run sim -- --hours=8 --rebirth=10 --rebirths=30`, active player): run 1 reaches floor 100 in about an hour and ends near floor 140; later runs reach Layer 3 (floor 201) between 2.5 and 5 hours and Layer 4 (floor 301) around 7.5 hours.
 
 ## Commands
 
@@ -25,8 +25,10 @@ src/
   engine/    DOM-free core: bignum, format, rng, economy math, state, save/load,
              migrations, serialize, loop, offline
   systems/   Game rules: army, crypt, descent (floors, bosses), siphon (click), upgrades,
-             events (souls, buffs), unlocks, modifiers (all multipliers), income, tick
-  content/   Data: minions, graveworks, upgrades, layers, events, story, balance (tuning knobs)
+             events (souls, buffs), loot and gear, magic, prestige, elites, library,
+             covens, feats, hazards (layer rules), modifiers (all multipliers), income, tick
+  content/   Data: minions, graveworks, upgrades, layers, events, story, loot, spells, pact,
+             elites, research, covens, achievements, balance (tuning knobs)
   ui/        View model, render clock, feedback (floats, toasts), Svelte panels
   game.ts    Browser runtime: boot, autosave, offline catch-up, import/export
 sim/         Headless balance simulator (writes CSV to sim/out/)

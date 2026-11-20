@@ -21,9 +21,14 @@ import { availableUpgrades, buyUpgrade } from '../src/systems/upgrades';
 import { update } from '../src/systems/tick';
 import { nextFloat } from '../src/engine/rng';
 import { PACT_NODES } from '../src/content/pact';
-import { SPELLS } from '../src/content/spells';
+import { ELITES } from '../src/content/elites';
+import { COVENS } from '../src/content/covens';
+import { RESEARCH } from '../src/content/research';
 import { equipBest } from '../src/systems/loot';
-import { castSpell } from '../src/systems/magic';
+import { CAST_ORDER, castSpell } from '../src/systems/magic';
+import { eliteCost, raiseElite } from '../src/systems/elites';
+import { canStartResearch, startResearch } from '../src/systems/library';
+import { chooseCoven, covensUnlocked } from '../src/systems/covens';
 import { buyPact, canBuyPact, canRebirth, rebirth } from '../src/systems/prestige';
 
 export interface SimOptions {
@@ -50,6 +55,8 @@ export interface SimOptions {
   useGear: boolean;
   /** Cast spells manually (auto-cast still works after the Dark Pact node). */
   useSpells: boolean;
+  /** Coven to swear to once covens unlock. */
+  coven: string;
 }
 
 export const DEFAULT_SIM_OPTIONS: SimOptions = {
@@ -61,11 +68,12 @@ export const DEFAULT_SIM_OPTIONS: SimOptions = {
   decideEvery: 1,
   seed: 1,
   sampleEvery: 60,
-  floorMilestones: [10, 20, 25, 30, 40, 50, 60, 70, 75, 80, 90, 100],
+  floorMilestones: [10, 20, 25, 30, 40, 50, 60, 70, 75, 80, 90, 100, 125, 150, 175, 200, 225, 250, 275, 300, 350, 400],
   rebirthAfterStall: 0,
   maxRebirths: 3,
   useGear: true,
   useSpells: true,
+  coven: COVENS[0]!.id,
 };
 
 export interface Milestone {
@@ -286,11 +294,17 @@ export function runSimulation(partial: Partial<SimOptions> = {}): SimResult {
         if (run() === 1) mark(`First ${label}`, t);
       });
       // An active player casts whatever is ready, buffs first.
-      if (opts.useSpells) {
-        for (const id of ['raiseLegion', 'ossuaryRite', 'boneSpear'] as const) {
-          if (SPELLS.some((sp) => sp.id === id)) castSpell(state, id);
-        }
+      if (opts.useSpells) for (const id of CAST_ORDER) castSpell(state, id);
+      // Elites: always raise the cheapest one that's affordable.
+      for (let guard = 0; guard < 100; guard++) {
+        const next = ELITES.map((e) => e.id).sort((a, b) => eliteCost(state, a) - eliteCost(state, b));
+        if (!next.some((id) => raiseElite(state, id))) break;
       }
+      // Research: start the cheapest available project whenever a desk is free.
+      for (const r of [...RESEARCH].sort((a, b) => a.cost - b.cost)) {
+        if (canStartResearch(state, r.id)) startResearch(state, r.id);
+      }
+      if (covensUnlocked(state) && !state.prestige.coven) chooseCoven(state, opts.coven);
       nextDecision += opts.decideEvery;
     }
 

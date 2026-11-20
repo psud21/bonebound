@@ -51,10 +51,23 @@ body {
   pointer-events: none;
   background:
     radial-gradient(ellipse 80% 50% at 50% -10%, rgba(120, 80, 170, calc(0.28 - var(--depth) * 0.18)), transparent 70%),
-    radial-gradient(ellipse 70% 60% at 50% 110%, rgba(150, 20, 30, calc(0.08 + var(--depth) * 0.3)), transparent 70%),
+    radial-gradient(ellipse 70% 60% at 50% 110%, rgba(var(--glow, 150, 20, 30), calc(0.08 + var(--depth) * 0.3)), transparent 70%),
     radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.75) 100%),
     linear-gradient(180deg, #120e17 0%, #0a080d 100%);
   transition: background 2s;
+}
+/* Each layer of the Abyss glows its own colour from below. */
+.backdrop[data-layer='2'] {
+  --glow: 30, 120, 125;
+}
+.backdrop[data-layer='3'] {
+  --glow: 200, 85, 20;
+}
+.backdrop[data-layer='4'] {
+  --glow: 110, 170, 220;
+}
+.backdrop[data-layer='5'] {
+  --glow: 120, 40, 140;
 }
 .backdrop::after {
   /* Fine grain so flat areas don't look digital. */

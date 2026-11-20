@@ -134,6 +134,7 @@
         {/each}
       </ul>
       {#if selected.power}<p class="item-power"><Icon name="sparkles" size={14} /> {selected.power}</p>{/if}
+      {#if selected.setName}<p class="item-set">Part of {selected.setName}</p>{/if}
       {#if !selected.equippedSlot}
         <p class="item-compare" class:better={selected.delta > 0} class:worse={selected.delta < 0}>
           {selected.delta > 0 ? `Upgrade (+${selected.delta} score)` : selected.delta < 0 ? `Weaker (${selected.delta} score)` : 'About the same'}
@@ -172,5 +173,19 @@
     </label>
     <button class="small-btn" onclick={onSalvageCommons}>Salvage Common &amp; Magic</button>
   </div>
-  <p class="muted small">Legendaries are never salvaged automatically.</p>
+  <p class="muted small">Legendaries and set pieces are never salvaged automatically.</p>
+
+  {#if relics.sets.length > 0}
+    <h3>Sets</h3>
+    {#each relics.sets as set (set.id)}
+      <div class="set-box">
+        <div class="set-name">{set.name} <span class="muted small">({set.worn}/{set.pieces} worn)</span></div>
+        <ul class="set-bonuses">
+          {#each set.bonuses as b (b.pieces)}
+            <li class:active={b.active}><span class="set-pieces">{b.pieces}</span> {b.text}</li>
+          {/each}
+        </ul>
+      </div>
+    {/each}
+  {/if}
 </div>

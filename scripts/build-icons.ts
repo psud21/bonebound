@@ -2,9 +2,10 @@
  * Copies only the icons the game uses from the game-icons.net set (CC BY 3.0)
  * into src/ui/icons.generated.ts, so the bundle doesn't carry all 4,000 icons.
  *   npm run icons
- * Add a name to ICON_NAMES, run the script, and commit the generated file.
+ * Icons named as `icon: '...'` in src/content are picked up automatically; add any
+ * other icon (used only by the UI) to ICON_NAMES. Run the script and commit the result.
  */
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 export const ICON_NAMES = [
@@ -31,7 +32,10 @@ export const ICON_NAMES = [
   // Dark Pact
   'pentagram-rose', 'heart-tower', 'time-trap', 'crystal-ball', 'dark-squad', 'hand-of-god', 'vortex', 'amphora',
   'lantern-flame', 'crowned-heart', 'star-formation', 'tombstone',
-] as const;
+  // M3 UI: Corpses, Lore, Library, Feats, Covens, hazards
+  'raise-zombie', 'open-book', 'bookshelf', 'trophy', 'laurels-trophy', 'pentagram-rose', 'drop', 'fire', 'snowflake-2',
+  'hourglass', 'ribcage', 'scroll-unfurled', 'pentacle', 'magic-swirl',
+];
 
 const root = join(import.meta.dirname, '..');
 const set = JSON.parse(readFileSync(join(root, 'node_modules/@iconify-json/game-icons/icons.json'), 'utf8')) as {
@@ -39,7 +43,20 @@ const set = JSON.parse(readFileSync(join(root, 'node_modules/@iconify-json/game-
   width?: number;
 };
 
-const entries = ICON_NAMES.map((name) => {
+/** Every `icon: 'name'` in the content files. */
+function contentIcons(): string[] {
+  const dir = join(root, 'src/content');
+  const found = new Set<string>();
+  for (const file of readdirSync(dir)) {
+    if (!file.endsWith('.ts')) continue;
+    for (const m of readFileSync(join(dir, file), 'utf8').matchAll(/icon: '([a-z0-9-]+)'/g)) found.add(m[1]!);
+  }
+  return [...found];
+}
+
+const names = [...new Set([...ICON_NAMES, ...contentIcons()])].sort();
+
+const entries = names.map((name) => {
   const icon = set.icons[name];
   if (!icon) throw new Error(`Icon not found: ${name}`);
   return `  '${name}': ${JSON.stringify(icon.body)},`;
@@ -58,4 +75,4 @@ export type IconName = keyof typeof ICONS;
 `;
 
 writeFileSync(join(root, 'src/ui/icons.generated.ts'), out);
-console.log(`Wrote ${ICON_NAMES.length} icons to src/ui/icons.generated.ts`);
+console.log(`Wrote ${names.length} icons to src/ui/icons.generated.ts`);

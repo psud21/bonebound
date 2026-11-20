@@ -15,6 +15,10 @@ export const BALANCE = {
   BONES_PER_HP: 0.055,
   /** Bones per HP shrinks by this factor each floor, so deeper floors pay less per hit. */
   BONES_PER_HP_DECAY: 0.98,
+  /** Below this floor (the end of Layer 1), HP and Bones follow the deeper curve. */
+  DEEP_FROM_FLOOR: 100,
+  DEEP_HP_GROWTH: 1.22,
+  DEEP_BONES_PER_HP_DECAY: 0.98,
   /** Damage of one Siphon click before upgrades. */
   BASE_CLICK_DAMAGE: 1,
   /** Crypt output multiplier per floor reached: DEPTH_BONUS^(maxFloor − 1). */
