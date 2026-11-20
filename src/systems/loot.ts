@@ -22,12 +22,14 @@ import {
 } from '../content/loot';
 import { gearStat, itemScore } from './gear';
 import { researchEffects } from './library';
+import { curseLootPercent } from './curses';
+import { addGem } from './gems';
 import { addLog } from './log';
 
 /** Item find from gear and research, as a multiplier. */
 export function lootFindMultiplier(state: GameState): number {
   const research = researchEffects(state, 'lootFind').reduce((s, e) => s + e.percent, 0);
-  return 1 + (gearStat(state, 'lootFind') + research) / 100;
+  return 1 + (gearStat(state, 'lootFind') + research + curseLootPercent(state)) / 100;
 }
 
 /** Legendaries and set pieces are never salvaged automatically. */
@@ -88,7 +90,7 @@ export function generateItem(state: GameState, level: number, rarity: Rarity, ki
   const name = legendary
     ? LEGENDARIES.find((l) => l.id === legendary)!.name
     : (setName ?? itemName(rng, itemKind, rarity, affixes));
-  return { id: state.loot.nextId++, kind: itemKind, rarity, level, name, implicit, affixes, legendary, set, empowered: 0 };
+  return { id: state.loot.nextId++, kind: itemKind, rarity, level, name, implicit, affixes, legendary, set, gems: [], empowered: 0 };
 }
 
 function rollRarity(state: GameState, boss: boolean, floor: number): Rarity {
@@ -171,6 +173,7 @@ export function salvageItem(state: GameState, id: number): boolean {
   if (index < 0) return false;
   const [item] = state.loot.inventory.splice(index, 1);
   state.loot.dust += dustValue(item!);
+  for (const key of item!.gems ?? []) addGem(state, key);
   return true;
 }
 
@@ -181,6 +184,7 @@ export function salvageAll(state: GameState, upTo: Rarity): number {
   for (const item of state.loot.inventory) {
     if (!isPrecious(item) && RANK[item.rarity] <= RANK[upTo]) {
       state.loot.dust += dustValue(item);
+      for (const key of item.gems ?? []) addGem(state, key);
       count++;
     } else keep.push(item);
   }

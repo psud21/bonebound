@@ -13,10 +13,20 @@ export type SpellId =
   | 'pestilence'
   | 'curseOfFrailty'
   | 'soulDrain'
-  | 'eclipse';
+  | 'eclipse'
+  | 'armyOfTheDead';
 
 /** Timed spell effects (they live alongside the Wandering Soul buffs). */
-export type SpellBuff = 'raiseLegion' | 'ossuaryRite' | 'bloodRite' | 'plagueWind' | 'rot' | 'pestilence' | 'curseOfFrailty' | 'eclipse';
+export type SpellBuff =
+  | 'raiseLegion'
+  | 'ossuaryRite'
+  | 'bloodRite'
+  | 'plagueWind'
+  | 'rot'
+  | 'pestilence'
+  | 'curseOfFrailty'
+  | 'eclipse'
+  | 'armyOfTheDead';
 
 export type SpellEffect =
   /** Deals this many seconds of army damage at once. */
@@ -43,6 +53,8 @@ export interface SpellDef {
   cooldown: number;
   /** School level needed to learn it. */
   unlockLevel: number;
+  /** Every school must reach this level too (the ultimate spell). */
+  allSchoolsLevel?: number;
   effect: SpellEffect;
 }
 
@@ -182,6 +194,19 @@ export const SPELLS: readonly SpellDef[] = [
     cooldown: 120,
     unlockLevel: 6,
     effect: { kind: 'buff', buff: 'eclipse' },
+  },
+  // Ultimate
+  {
+    id: 'armyOfTheDead',
+    school: 'bone',
+    name: 'Army of the Dead',
+    description: 'Every grave opens at once. For 30 seconds, army damage ×5 (more with School of Bone levels). Needs every school at level 25.',
+    icon: 'dark-squad',
+    cost: 150,
+    cooldown: 600,
+    unlockLevel: 25,
+    allSchoolsLevel: 25,
+    effect: { kind: 'buff', buff: 'armyOfTheDead' },
   },
 ];
 

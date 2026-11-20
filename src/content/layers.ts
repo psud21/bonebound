@@ -13,7 +13,13 @@ export type LayerModifier =
   /** Minions deal this percent less damage (burn-immune minions are spared). */
   | { kind: 'burn'; percent: number }
   /** The army attacks this percent slower. Siphon and spells are unaffected. */
-  | { kind: 'slow'; percent: number };
+  | { kind: 'slow'; percent: number }
+  /** Ordinary floors hold this many foes instead of the usual five. */
+  | { kind: 'swarm'; kills: number }
+  /** Consecrated guardians take only this fraction of minion damage (Wraiths pierce it). */
+  | { kind: 'holy'; guardianDamage: number }
+  /** Guardian timers are multiplied by this. */
+  | { kind: 'void'; timerMult: number };
 
 export type LayerHazard = Exclude<LayerModifier['kind'], 'none'>;
 
@@ -154,19 +160,87 @@ export const LAYERS: readonly LayerDef[] = [
     },
   },
   {
-    // Placeholder until Layer 5 arrives in M4.
-    id: 'uncharted',
-    name: 'Uncharted Depths',
+    id: 'fleshGardens',
+    name: 'The Flesh Gardens',
     fromFloor: 401,
+    toFloor: 500,
+    modifier: { kind: 'swarm', kills: 10 },
+    hazard: 'Everything here grows in clusters: ordinary floors hold 10 foes. Bone Mages and Pestilence thrive.',
+    enemies: [
+      { name: 'Bloom Horror', icon: 'carnivorous-plant' },
+      { name: 'Rot Grub', icon: 'maggot' },
+      { name: 'Flesh Weaver', icon: 'spider-face' },
+      { name: 'Pustule', icon: 'goo-skull' },
+      { name: 'Vine Strangler', icon: 'vine-whip' },
+      { name: 'Seed Mother', icon: 'plant-seed' },
+      { name: 'Thorn Hound', icon: 'thorny-vine' },
+      { name: 'Grave Bloom', icon: 'grave-flowers' },
+    ],
+    bosses: {
+      410: { name: 'The Gardener', icon: 'plant-roots' },
+      420: { name: 'Mother of Maggots', icon: 'maggot' },
+      430: { name: 'The Venus Abbess', icon: 'venus-flytrap' },
+      440: { name: 'The Thinking Bloom', icon: 'brain' },
+      450: { name: 'Heartwood', icon: 'tentacle-heart' },
+      460: { name: 'The Spore Choir', icon: 'spotted-mushroom' },
+      470: { name: 'Lady of Lilies', icon: 'lotus-flower' },
+      480: { name: 'The Rose Knight', icon: 'rose' },
+      490: { name: 'The Sunflower Saint', icon: 'sunflower' },
+      500: { name: 'The Great Root', icon: 'holy-oak' },
+    },
+  },
+  {
+    id: 'cathedralInverted',
+    name: 'The Cathedral Inverted',
+    fromFloor: 501,
+    toFloor: 600,
+    modifier: { kind: 'holy', guardianDamage: 0.34 },
+    hazard: 'Consecrated ground: guardians take a third of minion damage. Wraiths pass through the wards.',
+    enemies: [
+      { name: 'Fallen Seraph', icon: 'angel-wings' },
+      { name: 'Hollow Monk', icon: 'monk-face' },
+      { name: 'Censer Bearer', icon: 'holy-water' },
+      { name: 'Sun Priest', icon: 'sun-priest' },
+      { name: 'Grail Knight', icon: 'holy-grail' },
+      { name: 'Choir Ghost', icon: 'angel-outfit' },
+      { name: 'Relic Golem', icon: 'golem-head' },
+      { name: 'Penitent', icon: 'crown-of-thorns' },
+    ],
+    bosses: {
+      510: { name: 'The Upside-Down Bishop', icon: 'pope-crown' },
+      520: { name: 'High Priestess Vael', icon: 'tarot-02-the-high-priestess' },
+      530: { name: 'The Golden Gate', icon: 'heaven-gate' },
+      540: { name: 'Saint Basil Reversed', icon: 'saint-basil-cathedral' },
+      550: { name: 'The Holy Symbol', icon: 'holy-symbol' },
+      560: { name: 'The Temple Warden', icon: 'temple-gate' },
+      570: { name: 'Archon of Altars', icon: 'star-altar' },
+      580: { name: 'The Last Inquisitor', icon: 'templar-shield' },
+      590: { name: 'The Seraph Without Eyes', icon: 'angel-wings' },
+      600: { name: 'The Inverted God', icon: 'all-seeing-eye' },
+    },
+  },
+  {
+    id: 'throatOfTheVoid',
+    name: 'The Throat of the Void',
+    fromFloor: 601,
     toFloor: null,
-    modifier: { kind: 'none' },
-    hazard: '',
+    modifier: { kind: 'void', timerMult: 0.5 },
+    hazard: 'Time thins out at the bottom of everything: guardian timers are halved. It never ends.',
     enemies: [
       { name: 'Nameless Thing', icon: 'tentacles-skull' },
       { name: 'Hungering Dark', icon: 'shadow-grasp' },
       { name: 'Deep Crawler', icon: 'monster-grasp' },
+      { name: 'Star Eater', icon: 'death-star' },
+      { name: 'Falling Star', icon: 'falling-star' },
+      { name: 'The Unshaped', icon: 'brain-tentacle' },
     ],
-    bosses: {},
+    bosses: {
+      610: { name: 'The First Hunger', icon: 'worm-mouth' },
+      620: { name: 'The Star Gate', icon: 'star-gate' },
+      650: { name: 'The Unwritten', icon: 'evil-book' },
+      660: { name: 'Number of the Beast', icon: 'daemon-skull' },
+      700: { name: 'The Throat Itself', icon: 'vortex' },
+    },
   },
 ];
 

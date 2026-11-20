@@ -23,6 +23,10 @@ export interface MinionDef {
   guardianShred?: number;
   /** Can't be raised until this floor has been reached in any run. */
   requiresFloor?: number;
+  /** Damage multiplier on swarm floors (the Flesh Gardens). */
+  swarmMult?: number;
+  /** Ignores consecrated guardians (the Cathedral Inverted). */
+  holyPierce?: boolean;
 }
 
 export const MINIONS: readonly MinionDef[] = [
@@ -63,6 +67,8 @@ export const MINIONS: readonly MinionDef[] = [
     baseCost: 25_000,
     costGrowth: 1.1,
     baseDps: 650,
+    swarmMult: 3,
+    trait: 'Splash damage: ×3 damage in the Flesh Gardens.',
   },
   {
     id: 'wraith',
@@ -72,6 +78,8 @@ export const MINIONS: readonly MinionDef[] = [
     baseCost: 450_000,
     costGrowth: 1.11,
     baseDps: 6_000,
+    holyPierce: true,
+    trait: 'Passes through holy wards: full damage to consecrated guardians.',
   },
   {
     id: 'abomination',

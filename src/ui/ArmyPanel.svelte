@@ -5,6 +5,7 @@
   import { buyMinion } from '../systems/army';
   import { buyUpgrade } from '../systems/upgrades';
   import { raiseElite } from '../systems/elites';
+  import { setEliteGem } from '../systems/gems';
   import { refresh } from './frame.svelte';
   import { toast } from './feedback.svelte';
   import { UPGRADES_BY_ID } from '../content/upgrades';
@@ -21,6 +22,12 @@
 
   function onUpgrade(id: string) {
     if (buyUpgrade(runtime.state, id)) toast(`${UPGRADES_BY_ID[id]?.name}: ${UPGRADES_BY_ID[id]?.description}`);
+    refresh();
+  }
+
+  function onEliteGem(id: string, e: Event) {
+    const value = (e.currentTarget as HTMLSelectElement).value;
+    setEliteGem(runtime.state, id, value === '' ? null : value);
     refresh();
   }
 
@@ -181,6 +188,19 @@
                 </span>
               </span>
             </button>
+            {#if view.gems.visible}
+              {@const slot = view.gems.eliteSlots.find((g) => g.id === e.id)}
+              <label class="elite-gem small">
+                <Icon name={slot?.gemIcon ?? 'cut-diamond'} size={14} />
+                <select value={slot?.gem ?? ''} onchange={(ev) => onEliteGem(e.id, ev)} aria-label={`Gem carried by ${e.name}`}>
+                  <option value="">No gem (gems here count double)</option>
+                  {#if slot?.gem}<option value={slot.gem}>{slot.gemName}</option>{/if}
+                  {#each view.gems.bag.filter((g) => g.key !== slot?.gem) as g (g.key)}
+                    <option value={g.key}>{g.name} ×{g.count}</option>
+                  {/each}
+                </select>
+              </label>
+            {/if}
           {:else}
             <div class="row-buy row-locked">
               <span class="badge badge-locked"><Icon name={e.icon} size={34} /></span>

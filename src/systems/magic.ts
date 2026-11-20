@@ -21,6 +21,16 @@ import { totalIncome } from './income';
 import { researchEffects, researchProduct } from './library';
 import { addLog } from './log';
 import { hasPact, pactEffects } from './prestige';
+import { lichEffects } from './lichdom';
+import { damageRift, riftEnemyHp } from './rifts';
+import type { Decimal } from '../engine/bignum';
+
+/** Spell damage goes wherever the army is fighting: the Rift if one is open. */
+function strike(state: GameState, amount: Decimal): void {
+  if (state.rift.active) damageRift(state, amount);
+  else dealDamage(state, amount);
+}
+import { SCHOOL_IDS } from '../content/spells';
 import { addBones } from './resources';
 
 export function magicUnlocked(state: GameState): boolean {
@@ -69,7 +79,8 @@ function schoolBonus(state: GameState, school: SchoolId): number {
 
 export function spellPower(state: GameState, id: SpellId): number {
   const school = SPELLS_BY_ID[id].school;
-  return schoolPower(schoolLevel(state, school)) * eliteSpellPower(state) * schoolBonus(state, school);
+  const gaze = lichEffects(state, 'gaze').reduce((m, e) => m * e.spells, 1);
+  return schoolPower(schoolLevel(state, school)) * eliteSpellPower(state) * schoolBonus(state, school) * gaze;
 }
 
 export function spellCost(state: GameState, id: SpellId): number {
@@ -85,6 +96,7 @@ export function spellCooldown(state: GameState, id: SpellId): number {
 
 export function spellKnown(state: GameState, id: SpellId): boolean {
   const spell = SPELLS_BY_ID[id];
+  if (spell.allSchoolsLevel !== undefined && SCHOOL_IDS.some((s) => schoolLevel(state, s) < spell.allSchoolsLevel!)) return false;
   return schoolUnlocked(state, spell.school) && schoolLevel(state, spell.school) >= spell.unlockLevel;
 }
 
@@ -119,6 +131,8 @@ export function spellBuffValue(state: GameState, buff: SpellBuff, part: 'army' |
       return part === 'click' ? p : 1 + 0.5 * p;
     case 'ossuaryRite':
       return 3;
+    case 'armyOfTheDead':
+      return 1 + 4 * p;
   }
 }
 
@@ -164,7 +178,7 @@ export function castSpell(state: GameState, id: SpellId): boolean {
   const e = spell.effect;
   switch (e.kind) {
     case 'burst':
-      dealDamage(state, armyDps(state, onBossFloor(state)).mul(e.seconds * power));
+      strike(state, armyDps(state, !state.rift.active && onBossFloor(state)).mul(e.seconds * power));
       break;
     case 'buff':
       applyBuff(state, e.buff);
@@ -174,6 +188,12 @@ export function castSpell(state: GameState, id: SpellId): boolean {
       applyBuff(state, e.buff);
       break;
     case 'hpPercent': {
+      if (state.rift.active) {
+        const percent = Math.min(100, e.guardian * power);
+        const amount = riftEnemyHp(state, state.rift.depth).mul(percent / 100);
+        damageRift(state, amount.lt(state.rift.enemyHp) ? amount : state.rift.enemyHp);
+        break;
+      }
       const percent = Math.min(100, (onBossFloor(state) ? e.guardian : e.normal) * power);
       const amount = enemyMaxHp(state.descent.floor).mul(percent / 100);
       dealDamage(state, amount.lt(state.descent.enemyHp) ? amount : state.descent.enemyHp);
@@ -183,7 +203,7 @@ export function castSpell(state: GameState, id: SpellId): boolean {
       addBones(state, totalIncome(state).mul(e.seconds * power));
       break;
     case 'drain':
-      dealDamage(state, armyDps(state, onBossFloor(state)).mul(e.seconds * power));
+      strike(state, armyDps(state, !state.rift.active && onBossFloor(state)).mul(e.seconds * power));
       state.magic.essence = Math.min(essenceMax(state), state.magic.essence + e.essence * power);
       break;
   }
@@ -197,6 +217,7 @@ export function autoCastEnabled(state: GameState): boolean {
 
 /** Auto-cast priority: timed buffs first, then instant spells. Soul Drain last, to top up. */
 export const CAST_ORDER: readonly SpellId[] = [
+  'armyOfTheDead',
   'raiseLegion',
   'bloodRite',
   'plagueWind',

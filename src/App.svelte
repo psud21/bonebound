@@ -55,6 +55,13 @@
       <span class="corpse-value">{view.elites.corpses}</span>
     </div>
   {/if}
+  {#if view.lichdom.isLich}
+    <div class="resource dread-res" title="Dread: spend on Lich powers (every Dread ever earned boosts damage and Bones)">
+      <Icon name="crowned-skull" size={22} />
+      <span class="dread-value">{view.lichdom.dread}</span>
+      <span class="rate">DL {view.lichdom.darkLevel}</span>
+    </div>
+  {/if}
   {#if view.shardsEarned > 0}
     <div class="resource shards-res" title="Soul Shards to spend (every shard ever earned adds army damage)">
       <Icon name="soul-vessel" size={22} class="shard-res-icon" />

@@ -2,9 +2,21 @@
 
 A dark-fantasy incremental game. See [PLAN.md](PLAN.md) for the full design and roadmap.
 
-**Status:** M3 (Depth) complete on top of M1 and M2. Layers 2–4 (the Drowned Catacombs, Ashen Wastes and Weeping Glacier, each with a hazard), four more minions and two more graveworks, Corpses and Elites, the Schools of Blood, Plague and Shadow, Covens, the Forbidden Library, set relics and deeper legendaries, 42 feats, and story beats through floor 400.
+**Status:** M4 (Endgame) complete on top of M1–M3. The game now runs to an endless seventh layer, with:
+- gems and sockets
+- Abyssal Rifts
+- Curses
+- Lichdom Ascension with Dread, Lich powers and Dark Levels
+- the Army of the Dead ultimate spell
+- 52 feats
 
-**Pacing** (`npm run sim -- --hours=8 --rebirth=10 --rebirths=30`, active player): run 1 reaches floor 100 in about an hour and ends near floor 140; later runs reach Layer 3 (floor 201) between 2.5 and 5 hours and Layer 4 (floor 301) around 7.5 hours.
+M3 added Layers 2–4, four more minions, Corpses and Elites, the Schools of Blood, Plague and Shadow, Covens, the Forbidden Library, and set relics.
+
+**Pacing.** Run 1 reaches floor 100 in about an hour and ends near floor 140 (`npm run sim -- --hours=8 --rebirth=10 --rebirths=30`, active player). Over a simulated week of four active hours a day (`npm run sim -- --days=7 --active=4 --dt=0.5 --decide=5 --rebirth=10 --rebirths=500 --brief`):
+- Day 1 reaches the Ashen Wastes.
+- Day 2 reaches Layers 4–5 and the first Rift.
+- The first Lichdom Ascension comes around day 2–3, and the third around day 5.
+- Day 6 reaches the Throat of the Void. The week ends near floor 640.
 
 ## Commands
 
@@ -15,7 +27,7 @@ A dark-fantasy incremental game. See [PLAN.md](PLAN.md) for the full design and 
 | `npm test` | Run the unit tests |
 | `npm run check` | Type-check TypeScript and Svelte |
 | `npm run build` | Production build into `dist/` |
-| `npm run sim` | Balance simulator (options: `--hours=4 --cps=0 --seed=7 --attention=10 --souls=0.3 --rebirth=10 --rebirths=2 --gear=0 --spells=0`) |
+| `npm run sim` | Balance simulator (options: `--hours=4 --cps=0 --seed=7 --attention=10 --souls=0.3 --rebirth=10 --rebirths=2 --gear=0 --spells=0`; week runs: `--days=7 --active=4 --ascend=2 --dt=0.5 --decide=5 --brief`) |
 | `npm run icons` | Regenerate the bundled icon subset |
 
 ## Layout

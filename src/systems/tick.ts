@@ -4,6 +4,7 @@ import { updateCrypt } from './crypt';
 import { dealDamage, onBossFloor, updateBossTimer, updateRegen } from './descent';
 import { checkFeats } from './feats';
 import { updateLibrary } from './library';
+import { damageRift, updateRift } from './rifts';
 import { updateEvents } from './events';
 import { updateMagic } from './magic';
 import { autoBuy } from './prestige';
@@ -26,9 +27,16 @@ export function update(state: GameState, dt: number, ctx: TickContext = {}): voi
   updateLibrary(state, dt);
   updateRegen(state, dt);
 
-  const dps = armyDps(state, onBossFloor(state));
-  if (dps.gt(0)) dealDamage(state, dps.mul(dt), { floorCap: ctx.floorCap });
-  if (!offline) updateBossTimer(state, dt);
+  if (state.rift.active) {
+    // The army fights in the Rift; the descent waits (and so does the guardian timer).
+    const dps = armyDps(state, false);
+    if (dps.gt(0)) damageRift(state, dps.mul(dt));
+    updateRift(state, dt);
+  } else {
+    const dps = armyDps(state, onBossFloor(state));
+    if (dps.gt(0)) dealDamage(state, dps.mul(dt), { floorCap: ctx.floorCap });
+    if (!offline) updateBossTimer(state, dt);
+  }
 
   updateEvents(state, dt, offline);
   updateMagic(state, dt);

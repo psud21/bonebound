@@ -29,6 +29,15 @@ import { CAST_ORDER, castSpell } from '../src/systems/magic';
 import { eliteCost, raiseElite } from '../src/systems/elites';
 import { canStartResearch, startResearch } from '../src/systems/library';
 import { chooseCoven, covensUnlocked } from '../src/systems/covens';
+import { LICH_POWERS } from '../src/content/endgame';
+import { ELITES as ELITE_DEFS } from '../src/content/elites';
+import { parseGem } from '../src/content/gems';
+import { simulateOffline } from '../src/engine/offline';
+import { combineAll, setEliteGem, socketCount, socketGem } from '../src/systems/gems';
+import { buyLichPower, canAscend, canBuyLichPower, pendingDread } from '../src/systems/lichdom';
+import { canOpenRift, openRift } from '../src/systems/rifts';
+import { cursesUnlocked } from '../src/systems/curses';
+import { ascend } from '../src/systems/prestige';
 import { buyPact, canBuyPact, canRebirth, rebirth } from '../src/systems/prestige';
 
 export interface SimOptions {
@@ -57,6 +66,12 @@ export interface SimOptions {
   useSpells: boolean;
   /** Coven to swear to once covens unlock. */
   coven: string;
+  /** Hours of active play per day; the rest is simulated as time away (0 = always active). */
+  activeHoursPerDay: number;
+  /** Ascend once a Lichdom Ascension would grant at least this much Dread (0 = never). */
+  ascendAtDread: number;
+  /** Curses to take on every run once they unlock. */
+  curses: readonly string[];
 }
 
 export const DEFAULT_SIM_OPTIONS: SimOptions = {
@@ -68,13 +83,43 @@ export const DEFAULT_SIM_OPTIONS: SimOptions = {
   decideEvery: 1,
   seed: 1,
   sampleEvery: 60,
-  floorMilestones: [10, 20, 25, 30, 40, 50, 60, 70, 75, 80, 90, 100, 125, 150, 175, 200, 225, 250, 275, 300, 350, 400],
+  floorMilestones: [10, 20, 25, 30, 40, 50, 60, 70, 75, 80, 90, 100, 125, 150, 175, 200, 225, 250, 275, 300, 350, 400, 450, 500, 550, 600, 700, 800],
   rebirthAfterStall: 0,
   maxRebirths: 3,
   useGear: true,
   useSpells: true,
   coven: COVENS[0]!.id,
+  activeHoursPerDay: 0,
+  ascendAtDread: 2,
+  curses: [],
 };
+
+/** Highest tier first; damage gems before others. */
+function gemRank(key: string): number {
+  const g = parseGem(key);
+  if (!g) return 0;
+  const typeRank = { ruby: 3, diamond: 2, emerald: 1, amethyst: 0 }[g.type];
+  return g.tier * 10 + typeRank;
+}
+
+/** Combines gems, then fills empty sockets on worn relics and Elites with the best ones. */
+function manageGems(state: GameState): void {
+  combineAll(state);
+  const best = () => Object.keys(state.loot.gems).sort((a, b) => gemRank(b) - gemRank(a))[0];
+  for (const item of Object.values(state.loot.equipped)) {
+    if (!item) continue;
+    for (let i = item.gems.length; i < socketCount(item); i++) {
+      const key = best();
+      if (!key) return;
+      socketGem(state, item.id, key);
+    }
+  }
+  for (const e of ELITE_DEFS) {
+    const held = state.army.eliteGems[e.id];
+    const key = best();
+    if (key && (!held || gemRank(key) > gemRank(held))) setEliteGem(state, e.id, key);
+  }
+}
 
 export interface Milestone {
   label: string;
@@ -92,6 +137,8 @@ export interface SimSample {
 }
 
 export interface SimResult {
+  /** Seconds simulated as time away. */
+  offlineSeconds: number;
   state: GameState;
   milestones: Milestone[];
   samples: SimSample[];
@@ -246,7 +293,21 @@ export function runSimulation(partial: Partial<SimOptions> = {}): SimResult {
     });
   };
 
+  let offlineSeconds = 0;
+  const day = 86400;
   for (let t = 0; t <= opts.seconds; t += opts.dt) {
+    // Daily rhythm: after the active hours, the player is away until the next day.
+    if (opts.activeHoursPerDay > 0 && t % day >= opts.activeHoursPerDay * 3600) {
+      const away = day - (t % day);
+      simulateOffline(state, away);
+      offlineSeconds += away;
+      t += away - opts.dt;
+      // Coming back resets the stall clock: an unattended army never pushes deeper.
+      bestSeenAt = t;
+      lastChallenge = t;
+      challengeBoss(state);
+      continue;
+    }
     if (t >= nextSample) {
       record(t);
       nextSample += opts.sampleEvery;
@@ -310,6 +371,7 @@ export function runSimulation(partial: Partial<SimOptions> = {}): SimResult {
 
     if (opts.useGear && t >= nextGear) {
       equipBest(state);
+      manageGems(state);
       nextGear += 30;
     }
 
@@ -321,9 +383,38 @@ export function runSimulation(partial: Partial<SimOptions> = {}): SimResult {
       bestSeen = state.descent.maxFloor;
       bestSeenAt = t;
     }
+    // A stalled player spends Rift Keys while they wait.
+    if (canOpenRift(state) && t - bestSeenAt >= 120) {
+      openRift(state);
+      mark(`First Rift`, t);
+    }
+    if (cursesUnlocked(state) && opts.curses.length > 0 && state.prestige.nextCurses.length === 0) {
+      state.prestige.nextCurses = [...opts.curses];
+    }
+    // Lichdom: ascend once it pays enough Dread and the run has stalled.
+    if (
+      opts.ascendAtDread > 0 &&
+      !state.rift.active &&
+      canAscend(state) &&
+      pendingDread(state) >= opts.ascendAtDread &&
+      t - bestSeenAt >= opts.rebirthAfterStall
+    ) {
+      const depth = state.descent.maxFloor;
+      const dread = ascend(state, 0);
+      mark(`Ascension ${state.lich.ascensions} at floor ${depth} (+${dread} Dread)`, t);
+      for (let guard = 0; guard < 50; guard++) {
+        const next = LICH_POWERS.filter((p) => canBuyLichPower(state, p.id)).sort((a, b) => a.cost - b.cost)[0];
+        if (!next || !buyLichPower(state, next.id)) break;
+      }
+      pendingFloors.splice(0, pendingFloors.length, ...opts.floorMilestones);
+      bestSeen = state.descent.maxFloor;
+      bestSeenAt = t;
+      continue;
+    }
     if (
       opts.rebirthAfterStall > 0 &&
       state.prestige.rebirths < opts.maxRebirths &&
+      !state.rift.active &&
       canRebirth(state) &&
       t - bestSeenAt >= opts.rebirthAfterStall
     ) {
@@ -343,7 +434,7 @@ export function runSimulation(partial: Partial<SimOptions> = {}): SimResult {
     }
   }
 
-  return { state, milestones, samples, bossFails: state.stats.bossesFailed };
+  return { state, milestones, samples, bossFails: state.stats.bossesFailed, offlineSeconds };
 }
 
 export function samplesToCsv(samples: readonly SimSample[]): string {

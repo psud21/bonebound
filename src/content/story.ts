@@ -134,6 +134,36 @@ export const UNLOCKS: readonly UnlockDef[] = [
     id: 'weepingHeart',
     goal: 'Thaw the Weeping Heart',
     condition: { kind: 'maxFloor', floor: 401 },
-    text: 'The Weeping Heart stops weeping. Below the glacier, something enormous is breathing. (Layer 5 arrives in a future update.)',
+    text: 'The Weeping Heart stops weeping. Below the glacier the Flesh Gardens bloom, ten foes to every floor. And you are strong enough now to die a second time: Lichdom awaits in its own tab.',
+  },
+  {
+    id: 'gems',
+    goal: 'Find a gem',
+    condition: { kind: 'maxFloor', floor: 150 },
+    text: 'Old Grey Mouth swallowed treasure for centuries. Guardians from here down may leave gems: socket them into rare relics and better, or hand one to an Elite. Three of a kind combine into one finer stone.',
+  },
+  {
+    id: 'rifts',
+    goal: 'Tear open a Rift',
+    condition: { kind: 'maxFloor', floor: 301 },
+    text: 'Past the Furnace Throne the Abyss is thin enough to tear. Deep guardians now leave Rift Keys. A Rift is ten minutes of ever-harder foes; your best depth there makes the whole army stronger.',
+  },
+  {
+    id: 'curses',
+    goal: 'Invite a curse',
+    condition: { kind: 'rebirths', count: 5 },
+    text: 'You have died often enough to bargain with death itself. Curses make a run harder and pay out more Soul Shards. Choose them in the Phylactery before you Rebirth.',
+  },
+  {
+    id: 'cathedral',
+    goal: 'Uproot the Great Root',
+    condition: { kind: 'maxFloor', floor: 501 },
+    text: 'Below the gardens hangs a cathedral, upside down, still holy. Its guardians are consecrated: only Wraiths pass through the wards untouched.',
+  },
+  {
+    id: 'throat',
+    goal: 'Unmake the Inverted God',
+    condition: { kind: 'maxFloor', floor: 601 },
+    text: 'Below everything is the Throat of the Void. It does not end. Neither, now, do you.',
   },
 ];

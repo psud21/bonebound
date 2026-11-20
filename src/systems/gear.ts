@@ -1,4 +1,5 @@
 import type { GameState, Item, ItemAffix } from '../engine/state';
+import { eliteGemStats, gemStats } from './gems';
 import { LEGENDARIES_BY_ID, RARITY_INFO, SETS, STATS_BY_ID, type LegendaryEffect, type Rarity } from '../content/loot';
 
 /** The number an affix contributes, e.g. 23 for "+23% minion damage". */
@@ -39,26 +40,31 @@ export function itemScore(item: Item): number {
   return score;
 }
 
-const statCache = new WeakMap<object, { maxFloor: number; stats: Record<string, number> }>();
+const statCache = new WeakMap<object, { maxFloor: number; eliteGems: object; stats: Record<string, number> }>();
 const legendaryCache = new WeakMap<object, LegendaryEffect[]>();
 
 /**
- * Totals of every stat on equipped gear, at effective level. Cached per `equipped`
- * object and depth, so code that changes equipment must replace `state.loot.equipped`.
+ * Totals of every stat on equipped gear (at effective level), socketed gems and Elite gems.
+ * Cached per `equipped` object, depth and `eliteGems` object, so code that changes
+ * equipment or Elite gems must replace those objects.
  */
 export function gearStats(state: GameState): Record<string, number> {
   const eq = state.loot.equipped;
   const maxFloor = state.descent.maxFloor;
+  const eliteGems = state.army.eliteGems;
   const hit = statCache.get(eq);
-  if (hit && hit.maxFloor === maxFloor) return hit.stats;
+  if (hit && hit.maxFloor === maxFloor && hit.eliteGems === eliteGems) return hit.stats;
   const stats: Record<string, number> = {};
+  const add = (from: Record<string, number>) => {
+    for (const [stat, v] of Object.entries(from)) stats[stat] = (stats[stat] ?? 0) + v;
+  };
   for (const item of Object.values(eq)) {
     if (!item) continue;
-    for (const [stat, v] of Object.entries(itemStats(item, effectiveLevel(item, maxFloor)))) {
-      stats[stat] = (stats[stat] ?? 0) + v;
-    }
+    add(itemStats(item, effectiveLevel(item, maxFloor)));
+    for (const key of item.gems ?? []) add(gemStats(key));
   }
-  statCache.set(eq, { maxFloor, stats });
+  add(eliteGemStats(state));
+  statCache.set(eq, { maxFloor, eliteGems, stats });
   return stats;
 }
 

@@ -26,7 +26,19 @@ import { clickDamage } from '../systems/siphon';
 import { availableUpgrades } from '../systems/upgrades';
 import { isUnlocked } from '../systems/unlocks';
 import type { IconName } from './icons.generated';
-import { buildCovens, buildElites, buildFeats, buildGrimoire, buildLibrary, buildPhylactery, buildRelics } from './sections';
+import {
+  buildCovens,
+  buildCurses,
+  buildElites,
+  buildFeats,
+  buildGems,
+  buildGrimoire,
+  buildLibrary,
+  buildLichdom,
+  buildPhylactery,
+  buildRelics,
+  buildRift,
+} from './sections';
 import { minionAvailable } from '../systems/army';
 import { hazardFactor, regenRate } from '../systems/hazards';
 import { layerNumber } from '../content/layers';
@@ -197,6 +209,7 @@ export function buildView(state: GameState) {
     pestilence: 'poison-gas',
     curseOfFrailty: 'cursed-star',
     eclipse: 'moon-orbit',
+    armyOfTheDead: 'dark-squad',
   };
   const buffs = (Object.keys(state.events.buffs) as BuffId[]).map((id) => ({
     id,
@@ -268,6 +281,10 @@ export function buildView(state: GameState) {
     library: buildLibrary(state),
     feats: buildFeats(state),
     covens: buildCovens(state),
+    gems: buildGems(state),
+    rift: buildRift(state),
+    curses: buildCurses(state),
+    lichdom: buildLichdom(state),
     autoBuyOwned: hasPact(state, 'autoRaise'),
     autoBuy: state.prestige.autoBuy,
     shardsEarned: state.prestige.shardsEarned,

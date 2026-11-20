@@ -36,7 +36,8 @@ describe('layers and hazards', () => {
     expect(layerForFloor(150).name).toBe('The Drowned Catacombs');
     expect(layerForFloor(250).name).toBe('The Ashen Wastes');
     expect(layerForFloor(350).name).toBe('The Weeping Glacier');
-    expect(layerForFloor(450).id).toBe('uncharted');
+    expect(layerForFloor(450).id).toBe('fleshGardens');
+    expect(layerForFloor(9999).id).toBe('throatOfTheVoid');
   });
 
   it('keeps enemy HP rising floor to floor', () => {

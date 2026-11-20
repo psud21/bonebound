@@ -301,8 +301,40 @@ tests/
 | **M1 Vertical slice** (wk 2–3) ✅ | Siphon, 6 minions, 4 graveworks with Lich Wardens, Layer 1 (floors 1–100), boss timers, Wandering Soul | 45+ minutes of fun play with tuned pacing |
 | **M2 Loot and Rebirth** (wk 4–6) ✅ | Item slots, rarities, random stats, salvage, Essence and Bone school, Phylactery Rebirth and Dark Pact tree, offline progress | A full loop into a noticeably faster second run |
 | **M3 Depth** (wk 7–9) ✅ | All 4 schools, Covens, Forbidden Library, Layers 2–4, legendaries and sets, Elite minions, achievements, story | 5+ hours of content |
-| **M4 Endgame** (wk 10–12) | Rifts, Curses, Gems and sockets, Layers 5–7, Lichdom and Dark Levels | Week-long progression simulated |
+| **M4 Endgame** (wk 10–12) ✅ | Rifts, Curses, Gems and sockets, Layers 5–7, Lichdom and Dark Levels | Week-long progression simulated |
 | **M5 Polish and launch** (wk 13+) | Art and audio pass, tutorial hints, playtests, itch.io release | External testers reach their first Rebirth without help |
+
+### M4 as built
+
+- **Layers 5–7.** The Flesh Gardens (401–500) hold 10 foes per floor, and Bone Mages deal ×3 there. In the Cathedral Inverted (501–600) guardians take a third of minion damage, except from Wraiths. The Throat of the Void (601+) halves guardian timers and never ends.
+- **Gems.** Gems come in four types and seven tiers. Guardians from floor 150 drop them half the time, and three of one tier combine into one of the next. Rare relics have one socket; set and legendary relics have two. Each Elite carries one gem at double strength and keeps it through Rebirth and Ascension; this replaces the planned Elite equipment slots.
+- **Abyssal Rifts** (from floor 301). A guardian on floor 301 or deeper leaves a key the first time it falls each run.
+  - A Rift lasts 10 minutes, and the main descent pauses while it is open.
+  - Difficulty is fixed: depth *d* is one enemy as tough as the guardian of floor 100 + 10*d*, so best depth measures real power.
+  - Each level of best depth adds +3% army damage forever.
+  - Closing a Rift pays Bone Dust and gems, plus a legendary from depth 20.
+- **Curses** (after 5 Rebirths). Chosen in the Phylactery, they take effect at the next Rebirth.
+  - Each adds 15–30% Soul Shards and 20% item find.
+  - "Double enemy HP" became "your damage is halved", because enemy HP is a pure function of the floor. The effect is the same, but Bones per kill stay the same.
+- **Lichdom** (floor 401 and enough Soul Shards).
+  - Dread = ⌊√(shards earned ÷ 400)⌋.
+  - Ascension resets the run, Soul Shards and the Dark Pact. It keeps relics, gems, school levels, research, feats, Rift mastery, Dread and Lich powers.
+  - Each Dread ever earned gives +50% army damage and Bones.
+  - Nine Lich powers (cost 1–8 Dread) include free automation Pact nodes and starting on floor 201 or 401.
+  - Dark Levels come from new floors each run (+3% army damage each).
+- **Army of the Dead.** It needs every school at level 25 and gives army damage ×5 or more for 30 seconds.
+- **Deferred.** Mythic relics and Seasons (post-launch).
+
+### M4 tuning notes
+
+- **Simulated week.** The simulator ran `npm run sim -- --days=7 --active=4 --dt=0.5 --decide=5 --rebirth=10 --rebirths=500`: four active hours a day, with the rest as capped offline time.
+  - Day 1 reaches the Ashen Wastes.
+  - Day 2 reaches Layers 4–5 and the first Rift.
+  - The first Ascension lands on day 2–3. The original guess was "week 1–2", but this one's shorter Rebirth loop pulls it in.
+  - The third Ascension lands around day 5.
+  - Day 6 reaches the Throat of the Void. The week ends near floor 640, with Rift best ~33 and Dark Level ~24.
+  - With Dread at ⌊√(shards ÷ 250)⌋ the week ran faster (floor ~900), so the divisor is now 400.
+- **Upgrade effects are now folded once and cached.** Re-walking all purchased upgrades for every damage calculation made long simulations 2.5× slower.
 
 ### M3 tuning notes
 

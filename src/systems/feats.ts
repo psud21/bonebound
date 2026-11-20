@@ -29,6 +29,14 @@ export function featConditionMet(state: GameState, c: FeatCondition): boolean {
       return maxSetPieces(state) >= c.count;
     case 'minionOwned':
       return (state.army.minions[c.id]?.owned ?? 0) >= c.count;
+    case 'riftBest':
+      return state.rift.best >= c.depth;
+    case 'ascensions':
+      return state.lich.ascensions >= c.count;
+    case 'darkLevel':
+      return state.lich.darkLevel >= c.level;
+    case 'curses':
+      return state.prestige.curses.length >= c.count;
   }
 }
 

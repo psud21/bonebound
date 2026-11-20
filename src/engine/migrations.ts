@@ -20,6 +20,8 @@ export const MIGRATIONS: Readonly<Record<number, (save: RawSave) => RawSave>> = 
   },
   // v3 → v4 (M3): Corpses, Elites, the Library, feats, covens and set relics are new;
   // defaults fill them and sanitize() normalizes old items (set: null).
+  // v4 → v5 (M4): gems, sockets, Rifts, Curses and Lichdom are new; defaults fill them
+  // and sanitize() gives old items an empty gem list.
 };
 
 export class SaveVersionError extends Error {}

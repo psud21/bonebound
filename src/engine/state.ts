@@ -11,7 +11,7 @@ import { ELITES } from '../content/elites';
 import { enemyMaxHp } from '../systems/descent';
 
 /** Bump this and add a migration in migrations.ts whenever the save shape changes. */
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 
 export type BuyAmount = 1 | 10 | 100 | 'max';
 
@@ -51,6 +51,8 @@ export interface Item {
   legendary: string | null;
   /** Set id for set relics. */
   set: string | null;
+  /** Gems socketed into this item ("ruby:2"); at most SOCKETS[rarity]. */
+  gems: string[];
   /** Times this item has been Empowered. */
   empowered: number;
 }
@@ -82,6 +84,8 @@ export interface GameState {
     minions: Record<string, { owned: number }>;
     /** Elite levels by id. */
     elites: Record<string, number>;
+    /** The gem each Elite carries (kept through Rebirth). */
+    eliteGems: Record<string, string | null>;
   };
   crypt: {
     graveworks: Record<string, GraveworksState>;
@@ -113,6 +117,18 @@ export interface GameState {
     autoSalvage: AutoSalvage;
     /** Items found since the Relics tab was last opened. */
     unseen: number;
+    /** Loose gems by key ("ruby:2") → count. */
+    gems: Record<string, number>;
+  };
+  rift: {
+    keys: number;
+    active: boolean;
+    timeLeft: number;
+    /** Rift floor being fought (1-based). */
+    depth: number;
+    enemyHp: Decimal;
+    /** Deepest Rift floor ever cleared. */
+    best: number;
   };
   magic: {
     essence: number;
@@ -134,6 +150,17 @@ export interface GameState {
     runStartedAt: number;
     /** Coven sworn to this run, if any. */
     coven: string | null;
+    /** Curses on this run, and the ones chosen for the next. */
+    curses: string[];
+    nextCurses: string[];
+  };
+  lich: {
+    dread: number;
+    dreadEarned: number;
+    ascensions: number;
+    powers: string[];
+    darkLevel: number;
+    darkXp: number;
   };
   library: {
     lore: number;
@@ -157,6 +184,8 @@ export interface GameState {
     spellsCast: number;
     legendariesFound: number;
     corpsesEarned: number;
+    riftsRun: number;
+    gemsFound: number;
   };
   settings: {
     notation: Notation;
@@ -173,6 +202,7 @@ export function createInitialState(now: number = Date.now(), seed: number = rand
     army: {
       minions: Object.fromEntries(MINIONS.map((m) => [m.id, { owned: 0 }])),
       elites: Object.fromEntries(ELITES.map((e) => [e.id, 0])),
+      eliteGems: Object.fromEntries(ELITES.map((e) => [e.id, null])),
     },
     crypt: {
       graveworks: Object.fromEntries(
@@ -189,9 +219,11 @@ export function createInitialState(now: number = Date.now(), seed: number = rand
       bossTimeLeft: BALANCE.BOSS_TIMER_SECONDS,
     },
     events: { soulCooldown: BALANCE.SOUL_MIN_DELAY, soul: null, buffs: {} },
-    loot: { nextId: 1, inventory: [], equipped: {}, dust: 0, autoSalvage: 'none', unseen: 0 },
+    loot: { nextId: 1, inventory: [], equipped: {}, dust: 0, autoSalvage: 'none', unseen: 0, gems: {} },
+    rift: { keys: 0, active: false, timeLeft: 0, depth: 1, enemyHp: new Decimal(1), best: 0 },
     magic: { essence: 0, cooldowns: {}, autoCast: false, schools: Object.fromEntries(SCHOOL_IDS.map((id) => [id, { level: 0, xp: 0 }])) as Record<SchoolId, { level: number; xp: number }> },
-    prestige: { shards: 0, shardsEarned: 0, rebirths: 0, pact: [], autoBuy: false, bestFloor: 1, runStartedAt: 0, coven: null },
+    prestige: { shards: 0, shardsEarned: 0, rebirths: 0, pact: [], autoBuy: false, bestFloor: 1, runStartedAt: 0, coven: null, curses: [], nextCurses: [] },
+    lich: { dread: 0, dreadEarned: 0, ascensions: 0, powers: [], darkLevel: 0, darkXp: 0 },
     library: { lore: 0, loreEarned: 0, completed: [], active: [] },
     feats: [],
     unlocks: {},
@@ -207,6 +239,8 @@ export function createInitialState(now: number = Date.now(), seed: number = rand
       spellsCast: 0,
       legendariesFound: 0,
       corpsesEarned: 0,
+      riftsRun: 0,
+      gemsFound: 0,
     },
     settings: { notation: 'short', buyAmount: 1 },
   };

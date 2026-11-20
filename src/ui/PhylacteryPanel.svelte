@@ -3,6 +3,7 @@
   import type { GameView } from './viewModel';
   import { buyPact, rebirth } from '../systems/prestige';
   import { chooseCoven } from '../systems/covens';
+  import { toggleNextCurse } from '../systems/curses';
   import { refresh } from './frame.svelte';
   import { toast } from './feedback.svelte';
   import Icon from './Icon.svelte';
@@ -10,6 +11,12 @@
   let { runtime, view }: { runtime: GameRuntime; view: GameView } = $props();
   const p = $derived(view.phylactery);
   const c = $derived(view.covens);
+  const cu = $derived(view.curses);
+
+  function onCurse(id: string) {
+    toggleNextCurse(runtime.state, id);
+    refresh();
+  }
 
   let confirming = $state(false);
 
@@ -96,6 +103,28 @@
           {#each cv.boons as b}<span class="coven-boon">+ {b}</span>{/each}
           {#each cv.costs as b}<span class="coven-cost">− {b}</span>{/each}
         </button>
+      {/each}
+    </div>
+  {/if}
+
+  <h3>Curses</h3>
+  {#if !cu.unlocked}
+    <p class="muted small"><Icon name="padlock" size={11} /> Perform {cu.rebirthsNeeded} Rebirths to bargain with curses ({p.rebirths} so far).</p>
+  {:else}
+    <p class="muted small">
+      Chosen curses take hold at your next Rebirth and pay more Soul Shards (+{cu.nextBonusPercent}%) and item find.
+      {#if cu.active.length}This run: {cu.active.join(', ')}.{/if}
+    </p>
+    <div class="curses">
+      {#each cu.list as k (k.id)}
+        <label class="curse" class:on={k.next} class:active={k.active}>
+          <input type="checkbox" checked={k.next} onchange={() => onCurse(k.id)} data-testid={`curse-${k.id}`} />
+          <Icon name={k.icon} size={18} />
+          <span class="curse-body">
+            <span class="curse-name">{k.name} <span class="curse-bonus">+{k.bonusPercent}% shards</span></span>
+            <span class="curse-desc">{k.description}</span>
+          </span>
+        </label>
       {/each}
     </div>
   {/if}

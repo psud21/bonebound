@@ -19,6 +19,7 @@ export const BUFFS: Readonly<Record<BuffId, BuffDef>> = {
   rot: { id: 'rot', name: 'Rot', description: 'Enemies take 40% more damage, or more with School of Plague levels.', seconds: 30 },
   pestilence: { id: 'pestilence', name: 'Pestilence', description: 'Double damage or more to non-guardian enemies.', seconds: 20 },
   curseOfFrailty: { id: 'curseOfFrailty', name: 'Curse of Frailty', description: 'Guardians take double damage or more.', seconds: 25 },
+  armyOfTheDead: { id: 'armyOfTheDead', name: 'Army of the Dead', description: 'Army damage ×5 or more.', seconds: 30 },
   eclipse: { id: 'eclipse', name: 'Eclipse', description: 'Siphon ×10 and army damage ×1.5, or more with School of Shadow levels.', seconds: 15 },
 };
 export const BUFF_MULTIPLIERS = { soulFrenzy: 7, bloodMoon: 3, raiseLegion: 2, ossuaryRite: 3 } as const;
