@@ -29,6 +29,24 @@
   box-sizing: border-box;
 }
 
+/*
+ * Phones treat two quick taps as "double-tap to zoom", and this game is mostly quick taps.
+ * "manipulation" turns that off but keeps pinch-zoom. A touch only gets the actions that
+ * every element from the target up to the root allows, so setting it on html covers the page;
+ * the tap targets repeat it in case a wrapper ever sets its own touch-action.
+ */
+html,
+body,
+button,
+.soul,
+.enemy-wrap {
+  touch-action: manipulation;
+}
+button,
+.soul {
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   margin: 0;
   background: var(--bg);
@@ -757,6 +775,9 @@ button.upgrade:not(:disabled):hover {
     0 0 0 6px rgba(0, 0, 0, 0.25),
     0 0 40px rgba(162, 122, 224, 0.12);
   user-select: none;
+  -webkit-user-select: none;
+  /* No "save image / copy" menu on a long press while tapping fast. */
+  -webkit-touch-callout: none;
 }
 .enemy:hover:not(:disabled) {
   border-color: var(--essence);
