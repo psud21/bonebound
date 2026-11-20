@@ -6,6 +6,9 @@ import { FEATS_BY_ID } from '../content/achievements';
 import { COVENS_BY_ID } from '../content/covens';
 import { ELITES_BY_ID } from '../content/elites';
 import { RESEARCH_BY_ID } from '../content/research';
+import { CURSES_BY_ID, LICH_POWERS_BY_ID } from '../content/endgame';
+import { SOCKETS, parseGem } from '../content/gems';
+import { riftEnemyHp } from '../systems/rifts';
 import { PACT_BY_ID } from '../content/pact';
 import { SPELLS_BY_ID, type SpellId } from '../content/spells';
 import type { Notation } from './format';
@@ -193,13 +196,57 @@ function sanitize(state: GameState, raw: RawSave): GameState {
     : [];
   state.stats.legendariesFound = cleanCount(state.stats.legendariesFound);
   state.stats.corpsesEarned = cleanAmount(state.stats.corpsesEarned);
+
+  // Gems (M4)
+  const gems: Record<string, number> = {};
+  for (const [key, n] of Object.entries(loot.gems ?? {})) {
+    const count = cleanCount(n);
+    if (parseGem(key) && count > 0) gems[key] = count;
+  }
+  loot.gems = gems;
+  const eliteGems: Record<string, string | null> = {};
+  for (const id of Object.keys(ELITES_BY_ID)) {
+    const key = (state.army.eliteGems ?? {})[id];
+    eliteGems[id] = typeof key === 'string' && parseGem(key) ? key : null;
+  }
+  state.army.eliteGems = eliteGems;
+
+  // Rifts
+  const r = state.rift;
+  r.keys = cleanCount(r.keys);
+  r.best = cleanCount(r.best);
+  r.active = r.active === true;
+  r.depth = Math.max(1, cleanCount(r.depth));
+  if (!Number.isFinite(r.timeLeft) || r.timeLeft <= 0) r.active = false;
+  if (!r.active) r.timeLeft = 0;
+  if (r.enemyHp.lte(0) || r.enemyHp.gt(riftEnemyHp(state, r.depth))) r.enemyHp = riftEnemyHp(state, r.depth);
+
+  // Curses and Lichdom
+  const curses = (list: unknown) =>
+    Array.isArray(list) ? [...new Set(list.filter((id): id is string => typeof id === 'string' && !!CURSES_BY_ID[id]))] : [];
+  p.curses = curses(p.curses);
+  p.nextCurses = curses(p.nextCurses);
+  const l = state.lich;
+  l.dread = cleanCount(l.dread);
+  l.dreadEarned = Math.max(cleanCount(l.dreadEarned), l.dread);
+  l.ascensions = cleanCount(l.ascensions);
+  l.powers = Array.isArray(l.powers)
+    ? [...new Set(l.powers.filter((id): id is string => typeof id === 'string' && !!LICH_POWERS_BY_ID[id]))]
+    : [];
+  l.darkLevel = cleanCount(l.darkLevel);
+  l.darkXp = cleanAmount(l.darkXp);
+  state.stats.riftsRun = cleanCount(state.stats.riftsRun);
+  state.stats.gemsFound = cleanCount(state.stats.gemsFound);
   return state;
 }
 
 /** Fills fields added after the item was saved. */
 function normalizeItem(item: Item): Item {
   const set = typeof item.set === 'string' && SETS_BY_ID[item.set] ? item.set : null;
-  return { ...item, set, empowered: cleanCount(item.empowered) };
+  const gems = Array.isArray(item.gems)
+    ? item.gems.filter((k): k is string => typeof k === 'string' && !!parseGem(k)).slice(0, SOCKETS[item.rarity])
+    : [];
+  return { ...item, set, gems, empowered: cleanCount(item.empowered) };
 }
 
 /** A non-negative finite number (fractions allowed). */

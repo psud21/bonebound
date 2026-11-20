@@ -5,6 +5,7 @@
   import type { AutoSalvage } from '../engine/state';
   import type { EquipSlot } from '../content/loot';
   import { empower, equipBest, equipItem, reforge, salvageAll, salvageItem, unequip } from '../systems/loot';
+  import { combineAll, socketGem, unsocketGem } from '../systems/gems';
   import { refresh } from './frame.svelte';
   import { toast } from './feedback.svelte';
   import Icon from './Icon.svelte';
@@ -13,6 +14,7 @@
 
   let selectedId = $state<number | null>(null);
   const relics = $derived(view.relics);
+  const gems = $derived(view.gems);
   const selected = $derived.by((): ItemView | null => {
     if (selectedId === null) return null;
     return (
@@ -66,6 +68,18 @@
   }
   function onEmpower(id: number) {
     act(() => empower(runtime.state, id), 'Empowered to your deepest floor.');
+  }
+  function onSocket(itemId: number, e: Event) {
+    const key = (e.currentTarget as HTMLSelectElement).value;
+    if (key) act(() => socketGem(runtime.state, itemId, key), 'Gem socketed.');
+  }
+  function onUnsocket(itemId: number, index: number) {
+    act(() => unsocketGem(runtime.state, itemId, index), 'Gem returned to the bag.');
+  }
+  function onCombine() {
+    const n = combineAll(runtime.state);
+    toast(n > 0 ? `Combined ${n} set${n === 1 ? '' : 's'} of gems.` : 'Nothing to combine.');
+    refresh();
   }
   function onAutoSalvage(e: Event) {
     runtime.state.loot.autoSalvage = (e.currentTarget as HTMLSelectElement).value as AutoSalvage;
@@ -135,6 +149,26 @@
       </ul>
       {#if selected.power}<p class="item-power"><Icon name="sparkles" size={14} /> {selected.power}</p>{/if}
       {#if selected.setName}<p class="item-set">Part of {selected.setName}</p>{/if}
+      {#if selected.sockets.total > 0}
+        <div class="sockets">
+          {#each selected.sockets.gems as g, i (i)}
+            <button class="socket filled" title={`${g.name}: ${g.text}. Click to remove.`} onclick={() => onUnsocket(selected.id, i)}>
+              <Icon name={g.icon} size={16} /> <span>{g.text}</span>
+            </button>
+          {/each}
+          {#if selected.sockets.gems.length < selected.sockets.total}
+            <label class="socket empty">
+              <Icon name="cut-diamond" size={14} />
+              <select value="" onchange={(e) => onSocket(selected.id, e)} aria-label="Socket a gem" disabled={gems.bag.length === 0}>
+                <option value="">{gems.bag.length ? 'Socket a gem…' : 'Empty socket (no gems)'}</option>
+                {#each gems.bag as g (g.key)}
+                  <option value={g.key}>{g.name} ×{g.count}: {g.text}</option>
+                {/each}
+              </select>
+            </label>
+          {/if}
+        </div>
+      {/if}
       {#if !selected.equippedSlot}
         <p class="item-compare" class:better={selected.delta > 0} class:worse={selected.delta < 0}>
           {selected.delta > 0 ? `Upgrade (+${selected.delta} score)` : selected.delta < 0 ? `Weaker (${selected.delta} score)` : 'About the same'}
@@ -174,6 +208,25 @@
     <button class="small-btn" onclick={onSalvageCommons}>Salvage Common &amp; Magic</button>
   </div>
   <p class="muted small">Legendaries and set pieces are never salvaged automatically.</p>
+
+  {#if gems.visible}
+    <h3 class="gems-head">
+      <span>Gems</span>
+      <button class="small-btn" disabled={!gems.combinable} onclick={onCombine} data-testid="combine-gems">Combine (3 → 1)</button>
+    </h3>
+    {#if gems.bag.length === 0}
+      <p class="muted small">Guardians below floor 150 sometimes leave gems, and Rifts pay out in them. Rare, set and legendary relics have sockets; Elites carry one each.</p>
+    {:else}
+      <ul class="gem-bag">
+        {#each gems.bag as g (g.key)}
+          <li class="gem gem-{g.type}" title={g.text}>
+            <Icon name={g.icon} size={20} />
+            <span class="gem-body"><span class="gem-name">{g.name} ×{g.count}</span><span class="gem-desc">{g.text}</span></span>
+          </li>
+        {/each}
+      </ul>
+    {/if}
+  {/if}
 
   {#if relics.sets.length > 0}
     <h3>Sets</h3>

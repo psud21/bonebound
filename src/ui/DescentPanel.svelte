@@ -35,7 +35,7 @@
   }
 </script>
 
-<section class="panel descent" class:boss={view.isBoss}>
+<section class="panel descent" class:boss={view.isBoss && !view.rift.active} class:in-rift={view.rift.active}>
   <h2 class="panel-title"><Icon name="stairs" size={22} /> The Descent</h2>
   <div class="layer"><Icon name="crypt-entrance" size={14} /> Layer {view.layerNumber}: {view.layerName}</div>
   {#if view.hazard}
@@ -54,7 +54,13 @@
 
   <DepthTrack depth={view.depth} floor={view.floor} />
 
-  {#if view.isBoss}
+  {#if view.rift.active}
+    <div class="rift-banner"><Icon name="magic-portal" size={16} /> Abyssal Rift · depth {view.rift.depth} · as tough as floor {view.rift.enemyFloor}</div>
+    <div class="boss-timer" aria-label="Rift timer">
+      <div class="boss-timer-fill rift-timer" style:width={`${view.rift.timePercent}%`}></div>
+      <span class="boss-timer-text"><Icon name="sands-of-time" size={13} /> {Math.ceil(view.rift.timeLeft)}s</span>
+    </div>
+  {:else if view.isBoss}
     <div class="boss-timer" aria-label="Guardian timer">
       <div class="boss-timer-fill" style:width={`${view.bossTimerPercent}%`}></div>
       <span class="boss-timer-text"><Icon name="sands-of-time" size={13} /> {view.bossTimeLeft.toFixed(1)}s</span>
@@ -78,7 +84,7 @@
     >
       {#key view.enemyKey}
         <span class="enemy-sprite" in:scale={{ start: 0.7, opacity: 1, duration: 140 }}>
-          <Icon name={view.enemyIcon} size={view.isBoss ? 120 : 100} />
+          <Icon name={view.rift.active ? 'vortex' : view.enemyIcon} size={view.isBoss ? 120 : 100} />
         </span>
       {/key}
     </button>
@@ -86,12 +92,19 @@
       <span class="float" class:float-crit={f.crit} style:--dx={`${f.dx}px`} aria-hidden="true">{f.text}</span>
     {/each}
   </div>
-  <div class="enemy-name" class:boss-name={view.isBoss}>{view.enemyName}</div>
+  <div class="enemy-name" class:boss-name={view.isBoss && !view.rift.active}>{view.rift.active ? 'Rift Horror' : view.enemyName}</div>
 
+  {#if view.rift.active}
+    <div class="hpbar" aria-label="Rift enemy health">
+      <div class="hpfill" style:width={`${view.rift.hpPercent}%`}></div>
+      <span class="hptext">{view.rift.enemyHp} / {view.rift.enemyMaxHp}</span>
+    </div>
+  {:else}
   <div class="hpbar" aria-label="Enemy health">
     <div class="hpfill" style:width={`${view.hpPercent}%`}></div>
     <span class="hptext">{view.enemyHp} / {view.enemyMaxHp}{view.regenPercent > 0 ? ` · heals ${view.regenPercent}%/s` : ''}</span>
   </div>
+  {/if}
 
   <SpellBar {runtime} {view} />
 

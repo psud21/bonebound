@@ -3,7 +3,16 @@ import type { SchoolId } from './spells';
 
 export type FeatCondition =
   | { kind: 'bestFloor'; floor: number }
-  | { kind: 'stat'; stat: 'totalKills' | 'totalClicks' | 'soulsCaught' | 'itemsFound' | 'legendariesFound' | 'bossesDefeated' | 'spellsCast' | 'corpsesEarned'; count: number }
+  | { kind: 'stat'; stat:
+        | 'totalKills'
+        | 'totalClicks'
+        | 'soulsCaught'
+        | 'itemsFound'
+        | 'legendariesFound'
+        | 'bossesDefeated'
+        | 'spellsCast'
+        | 'corpsesEarned'
+        | 'gemsFound'; count: number }
   | { kind: 'lifetimeBones'; amount: number }
   | { kind: 'rebirths'; count: number }
   | { kind: 'schoolLevel'; school: SchoolId | 'any'; level: number }
@@ -11,7 +20,11 @@ export type FeatCondition =
   | { kind: 'research'; count: number }
   | { kind: 'coven' }
   | { kind: 'setPieces'; count: number }
-  | { kind: 'minionOwned'; id: string; count: number };
+  | { kind: 'minionOwned'; id: string; count: number }
+  | { kind: 'riftBest'; depth: number }
+  | { kind: 'ascensions'; count: number }
+  | { kind: 'darkLevel'; level: number }
+  | { kind: 'curses'; count: number };
 
 export interface FeatDef {
   id: string;
@@ -73,6 +86,17 @@ export const FEATS: readonly FeatDef[] = [
   { id: 'elites75', name: 'The Honour Guard', description: 'Reach 75 Elite levels in one run.', icon: 'knight-banner', condition: { kind: 'eliteLevels', count: 75 } },
   { id: 'research5', name: 'Bookish', description: 'Complete 5 research projects.', icon: 'evil-book', condition: { kind: 'research', count: 5 } },
   { id: 'research15', name: 'Forbidden Scholar', description: 'Complete 15 research projects.', icon: 'evil-book', condition: { kind: 'research', count: 15 } },
+  // Endgame (M4)
+  { id: 'floor500', name: 'Root and Branch', description: 'Reach floor 500.', icon: 'holy-oak', condition: { kind: 'bestFloor', floor: 500 } },
+  { id: 'floor601', name: 'Godslayer', description: 'Defeat the Inverted God.', icon: 'all-seeing-eye', condition: { kind: 'bestFloor', floor: 601 } },
+  { id: 'floor700', name: 'Down the Throat', description: 'Reach floor 700.', icon: 'vortex', condition: { kind: 'bestFloor', floor: 700 } },
+  { id: 'gems25', name: 'Jeweller of the Dead', description: 'Find 25 gems.', icon: 'cut-diamond', condition: { kind: 'stat', stat: 'gemsFound', count: 25 } },
+  { id: 'rift10', name: 'Rift Diver', description: 'Clear Rift depth 10.', icon: 'magic-portal', condition: { kind: 'riftBest', depth: 10 } },
+  { id: 'rift30', name: 'Riftborn', description: 'Clear Rift depth 30.', icon: 'magic-portal', condition: { kind: 'riftBest', depth: 30 } },
+  { id: 'curses3', name: 'Glutton for Punishment', description: 'Run with three curses at once.', icon: 'cursed-star', condition: { kind: 'curses', count: 3 } },
+  { id: 'ascend1', name: 'The Second Death', description: 'Ascend to Lichdom.', icon: 'crowned-skull', condition: { kind: 'ascensions', count: 1 } },
+  { id: 'ascend3', name: 'Death, Thrice Refused', description: 'Ascend three times.', icon: 'crowned-skull', condition: { kind: 'ascensions', count: 3 } },
+  { id: 'dark25', name: 'Darker Still', description: 'Reach Dark Level 25.', icon: 'dread-skull', condition: { kind: 'darkLevel', level: 25 } },
 ];
 
 export const FEATS_BY_ID: Readonly<Record<string, FeatDef>> = Object.fromEntries(FEATS.map((f) => [f.id, f]));

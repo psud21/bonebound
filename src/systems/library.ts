@@ -3,6 +3,7 @@ import type { GameState } from '../engine/state';
 import { LIBRARY, RESEARCH, RESEARCH_BY_ID, type ResearchEffect } from '../content/research';
 import { addLog } from './log';
 import { pactEffects } from './prestige';
+import { lichEffects } from './lichdom';
 
 export function libraryUnlocked(state: GameState): boolean {
   return state.unlocks.library === true;
@@ -33,7 +34,10 @@ export function researchSlots(state: GameState): number {
 }
 
 export function researchSpeed(state: GameState): number {
-  return pactEffects(state, 'researchSpeed').reduce((m, e) => m * e.mult, 1);
+  return (
+    pactEffects(state, 'researchSpeed').reduce((m, e) => m * e.mult, 1) *
+    lichEffects(state, 'researchSpeed').reduce((m, e) => m * e.mult, 1)
+  );
 }
 
 export function isResearching(state: GameState, id: string): boolean {

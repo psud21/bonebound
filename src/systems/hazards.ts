@@ -34,3 +34,24 @@ export function slowMultiplier(state: GameState): number {
   if (mod.kind !== 'slow') return 1;
   return 1 - (mod.percent / 100) * hazardFactor(state, 'slow');
 }
+
+/** Damage multiplier against consecrated guardians in the Cathedral Inverted. */
+export function holyMultiplier(state: GameState, holyPierce: boolean): number {
+  const floor = state.descent.floor;
+  const mod = layerForFloor(floor).modifier;
+  if (mod.kind !== 'holy' || holyPierce || !isBossFloor(floor)) return 1;
+  return 1 - (1 - mod.guardianDamage) * hazardFactor(state, 'holy');
+}
+
+/** Damage multiplier for one minion on swarm floors (Bone Mages splash). */
+export function swarmMultiplier(state: GameState, swarmMult: number | undefined): number {
+  const mod = layerForFloor(state.descent.floor).modifier;
+  return mod.kind === 'swarm' && swarmMult ? swarmMult : 1;
+}
+
+/** Guardian timer multiplier from the Throat of the Void. */
+export function voidTimerMultiplier(state: GameState): number {
+  const mod = layerForFloor(state.descent.floor).modifier;
+  if (mod.kind !== 'void') return 1;
+  return 1 - (1 - mod.timerMult) * hazardFactor(state, 'void');
+}

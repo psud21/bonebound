@@ -9,10 +9,12 @@
   import PhylacteryPanel from './PhylacteryPanel.svelte';
   import LibraryPanel from './LibraryPanel.svelte';
   import FeatsPanel from './FeatsPanel.svelte';
+  import RiftsPanel from './RiftsPanel.svelte';
+  import LichdomPanel from './LichdomPanel.svelte';
 
   let { runtime, view }: { runtime: GameRuntime; view: GameView } = $props();
 
-  type TabId = 'crypt' | 'relics' | 'grimoire' | 'library' | 'phylactery' | 'feats';
+  type TabId = 'crypt' | 'relics' | 'grimoire' | 'library' | 'rifts' | 'phylactery' | 'lichdom' | 'feats';
   let active = $state<TabId>('crypt');
 
   const tabs = $derived(
@@ -40,6 +42,13 @@
         badge: view.library.busy < view.library.slots && view.library.startable > 0 ? 1 : 0,
       },
       {
+        id: 'rifts' as const,
+        label: 'Rifts',
+        icon: 'magic-portal' as IconName,
+        visible: view.rift.visible,
+        badge: view.rift.canOpen ? view.rift.keys : 0,
+      },
+      {
         id: 'phylactery' as const,
         label: 'Phylactery',
         icon: 'soul-vessel' as IconName,
@@ -48,6 +57,13 @@
           view.phylactery.canRebirth || view.phylactery.affordableNodes > 0 || (view.covens.unlocked && !view.covens.sworn)
             ? 1
             : 0,
+      },
+      {
+        id: 'lichdom' as const,
+        label: 'Lichdom',
+        icon: 'crowned-skull' as IconName,
+        visible: view.lichdom.visible,
+        badge: view.lichdom.canAscend || view.lichdom.affordable > 0 ? 1 : 0,
       },
       {
         id: 'feats' as const,
@@ -75,7 +91,7 @@
       >
         <Icon name={t.icon} size={18} />
         <span>{t.label}</span>
-        {#if t.badge > 0 && current !== t.id}<span class="tab-badge">{t.id === 'relics' ? t.badge : '!'}</span>{/if}
+        {#if t.badge > 0 && current !== t.id}<span class="tab-badge">{t.id === 'relics' || t.id === 'rifts' ? t.badge : '!'}</span>{/if}
       </button>
     {/each}
   </div>
@@ -91,6 +107,10 @@
       <LibraryPanel {runtime} {view} />
     {:else if current === 'feats'}
       <FeatsPanel {view} />
+    {:else if current === 'rifts'}
+      <RiftsPanel {runtime} {view} />
+    {:else if current === 'lichdom'}
+      <LichdomPanel {runtime} {view} />
     {:else}
       <PhylacteryPanel {runtime} {view} />
     {/if}

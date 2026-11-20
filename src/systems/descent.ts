@@ -1,7 +1,10 @@
 import { D, Decimal } from '../engine/bignum';
 import type { GameState } from '../engine/state';
 import { BALANCE } from '../content/balance';
-import { enemyName, isBossFloor } from '../content/layers';
+import { enemyName, isBossFloor, layerForFloor } from '../content/layers';
+import { rollGemDrop } from './gems';
+import { gainDarkXp } from './lichdom';
+import { maybeGrantKey } from './rifts';
 import { addLog } from './log';
 import { bossTimerSeconds, guardianShred } from './modifiers';
 import { gainCorpses } from './elites';
@@ -28,7 +31,9 @@ export function enemyMaxHp(floor: number): Decimal {
 }
 
 export function killsForFloor(floor: number): number {
-  return isBossFloor(floor) ? 1 : BALANCE.KILLS_PER_FLOOR;
+  if (isBossFloor(floor)) return 1;
+  const mod = layerForFloor(floor).modifier;
+  return mod.kind === 'swarm' ? mod.kills : BALANCE.KILLS_PER_FLOOR;
 }
 
 /** Base Bones per kill, before the global Bones multiplier. */
@@ -62,6 +67,7 @@ export function enterFloor(state: GameState, floor: number): void {
   d.floor = Math.max(1, floor);
   d.killsOnFloor = 0;
   d.enemyHp = enemyMaxHp(d.floor);
+  if (d.floor > d.maxFloor) gainDarkXp(state, d.floor);
   d.maxFloor = Math.max(d.maxFloor, d.floor);
   state.prestige.bestFloor = Math.max(state.prestige.bestFloor, d.maxFloor);
   if (isBossFloor(d.floor)) {
@@ -137,7 +143,11 @@ export function dealDamage(state: GameState, amount: Decimal, options: DamageOpt
       result.bossesDefeated += kills;
       if (canAdvance) {
         // A guardian's first fall this run leaves Lore behind.
-        if (floor >= d.maxFloor) gainLore(state, guardianLore(floor));
+        if (floor >= d.maxFloor) {
+          gainLore(state, guardianLore(floor));
+          maybeGrantKey(state, floor);
+        }
+        rollGemDrop(state, floor);
         addLog(state, 'boss', `${enemyName(floor, 0)} has fallen. Floor ${floor} is yours.`);
       }
     } else {

@@ -27,6 +27,10 @@ function parseArgs(argv: string[]): Partial<SimOptions> {
     if (key === 'rebirths') out.maxRebirths = value;
     if (key === 'gear') out.useGear = value !== 0;
     if (key === 'spells') out.useSpells = value !== 0;
+    if (key === 'days') out.seconds = value * 86400;
+    if (key === 'decide') out.decideEvery = value;
+    if (key === 'active') out.activeHoursPerDay = value;
+    if (key === 'ascend') out.ascendAtDread = value;
   }
   return out;
 }
@@ -40,7 +44,11 @@ console.log(
   `\nSimulated ${formatDuration(options.seconds)} at ${options.clicksPerSecond} clicks/s ` +
     `(seed ${options.seed}, dt ${options.dt}s) in ${elapsedMs.toFixed(0)} ms\n`,
 );
-console.table(result.milestones.map((m) => ({ milestone: m.label, time: formatDuration(m.seconds) })));
+const brief = process.argv.includes('--brief');
+const shown = brief
+  ? result.milestones.filter((m) => /ended|Ascension|First Rift|floor (100|200|300|400|500|600|700|800)$/.test(m.label))
+  : result.milestones;
+console.table(shown.map((m) => ({ milestone: m.label, time: formatDuration(m.seconds) })));
 
 const s = result.state;
 console.log(
@@ -51,6 +59,11 @@ console.log(
   `Bosses: ${s.stats.bossesDefeated} defeated, ${result.bossFails} failed · Souls caught: ${s.stats.soulsCaught} · ` +
     `Upgrades: ${s.upgrades.purchased.length} · Rebirths: ${s.prestige.rebirths} · Shards: ${s.prestige.shardsEarned} · ` +
     `Items found: ${s.stats.itemsFound} · Schools: ${Object.entries(s.magic.schools).map(([k, v]) => `${k} ${v.level}`).join(', ')}`,
+);
+console.log(
+  `Lich: ascensions ${s.lich.ascensions}, Dread ${s.lich.dreadEarned}, Dark Level ${s.lich.darkLevel}, powers ${s.lich.powers.length} · ` +
+    `Rift best ${s.rift.best} (${s.stats.riftsRun} run, ${s.rift.keys} keys left) · Gems found ${s.stats.gemsFound} · ` +
+    `Offline ${formatDuration(result.offlineSeconds)}`,
 );
 console.log(
   `Elites: ${JSON.stringify(s.army.elites)} · Corpses earned: ${Math.round(s.stats.corpsesEarned)} · Lore earned: ${Math.round(s.library.loreEarned)} · ` +

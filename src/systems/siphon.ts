@@ -5,6 +5,7 @@ import { armyDps } from './army';
 import { dealDamage, onBossFloor, type DamageResult } from './descent';
 import { chance } from '../engine/rng';
 import { hasLegendary } from './gear';
+import { damageRift } from './rifts';
 import { allDamageMultiplier, clickDpsPercent, clickFlatBonus, clickMultiplier } from './modifiers';
 
 export function clickDamage(state: GameState): Decimal {
@@ -29,6 +30,10 @@ export function siphon(state: GameState): SiphonResult {
       damage = damage.mul(e.mult);
       crit = true;
     }
+  }
+  if (state.rift.active) {
+    damageRift(state, damage);
+    return { kills: 0, bones: new Decimal(0), floorsCleared: 0, bossesDefeated: 0, damage, crit };
   }
   return { ...dealDamage(state, damage), damage, crit };
 }

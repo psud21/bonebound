@@ -11,6 +11,21 @@ import { canRaiseElite, corpsesUnlocked, eliteCost, eliteEffectText, eliteLevel,
 import { canStartResearch, libraryUnlocked, researchDone, researchSlots, researchSpeed } from '../systems/library';
 import { featMultiplier, hasFeat } from '../systems/feats';
 import { covensUnlocked } from '../systems/covens';
+import type { Decimal } from '../engine/bignum';
+import { GEMS, GEMS_TO_COMBINE, MAX_GEM_TIER, SOCKETS, gemName, parseGem } from '../content/gems';
+import { CURSES, CURSES_BY_ID, CURSE_UNLOCK_REBIRTHS, LICHDOM, LICH_POWERS, RIFT, darkXpForLevel } from '../content/endgame';
+import { gemDescription, gemsUnlocked } from '../systems/gems';
+import { canOpenRift, riftEnemyHp, riftFloorFor, riftMasteryMultiplier, riftSeconds, riftsUnlocked } from '../systems/rifts';
+import { activeCurses, cursesUnlocked } from '../systems/curses';
+import {
+  canAscend,
+  canBuyLichPower,
+  darkLevelMultiplier,
+  dreadMultiplier,
+  hasLichPower,
+  lichdomVisible,
+  pendingDread,
+} from '../systems/lichdom';
 import { affixValue, effectiveLevel, itemAffixes, itemScore, setCounts } from '../systems/gear';
 import { dustValue, empowerCost, lootEnabled, reforgeCost, scoreDelta, targetSlot } from '../systems/loot';
 import {
@@ -51,6 +66,7 @@ export function itemView(state: GameState, item: Item, equippedSlot: string | nu
     lines: itemAffixes(item).map((a, i) => ({ text: statLine(a.stat, affixValue(a, item.level, item.rarity)), implicit: i === 0 })),
     power: legendary?.power ?? null,
     setName: item.set ? (SETS_BY_ID[item.set]?.name ?? null) : null,
+    sockets: itemSockets(item),
     score: Math.round(itemScore(item)),
     /** Positive = upgrade over what it would replace. */
     delta: Math.round(delta),
@@ -284,6 +300,11 @@ export function buildFeats(state: GameState) {
       { label: 'Spells cast', value: formatNumber(state.stats.spellsCast, n) },
       { label: 'Corpses gathered', value: formatNumber(Math.floor(state.stats.corpsesEarned), n) },
       { label: 'Rebirths', value: String(state.prestige.rebirths) },
+      { label: 'Gems found', value: formatNumber(state.stats.gemsFound, n) },
+      { label: 'Rifts opened', value: String(state.stats.riftsRun) },
+      { label: 'Best Rift depth', value: String(state.rift.best) },
+      { label: 'Ascensions', value: String(state.lich.ascensions) },
+      { label: 'Dark Level', value: String(state.lich.darkLevel) },
     ],
   };
 }
@@ -296,5 +317,113 @@ export function buildCovens(state: GameState) {
     swornName: sworn ? (COVENS_BY_ID[sworn]?.name ?? null) : null,
     rebirthsNeeded: COVEN_UNLOCK_REBIRTHS,
     list: COVENS.map((c) => ({ ...c, chosen: c.id === sworn })),
+  };
+}
+
+export function buildGems(state: GameState) {
+  const bag = Object.entries(state.loot.gems)
+    .map(([key, count]) => {
+      const g = parseGem(key)!;
+      return {
+        key,
+        count,
+        type: g.type,
+        tier: g.tier,
+        name: gemName(key),
+        icon: GEMS[g.type].icon,
+        text: gemDescription(key),
+        canCombine: count >= GEMS_TO_COMBINE && g.tier < MAX_GEM_TIER,
+      };
+    })
+    .sort((a, b) => b.tier - a.tier || a.type.localeCompare(b.type));
+  return {
+    visible: gemsUnlocked(state),
+    bag,
+    combinable: bag.some((g) => g.canCombine),
+    eliteSlots: ELITES.map((e) => {
+      const key = state.army.eliteGems[e.id] ?? null;
+      return { id: e.id, name: e.name, gem: key, gemName: key ? gemName(key) : null, gemIcon: key ? GEMS[parseGem(key)!.type].icon : null };
+    }),
+  };
+}
+
+/** Sockets on one item, for the item card. */
+export function itemSockets(item: Item) {
+  return {
+    total: SOCKETS[item.rarity],
+    gems: item.gems.map((key) => ({ key, name: gemName(key), icon: GEMS[parseGem(key)?.type ?? 'ruby'].icon, text: gemDescription(key) })),
+  };
+}
+
+export function buildRift(state: GameState) {
+  const r = state.rift;
+  const fmt = (x: Decimal) => formatNumber(x, state.settings.notation);
+  const maxHp = riftEnemyHp(state, r.depth);
+  return {
+    visible: riftsUnlocked(state),
+    keys: r.keys,
+    best: r.best,
+    masteryPercent: Math.round((riftMasteryMultiplier(state) - 1) * 100),
+    canOpen: canOpenRift(state),
+    active: r.active,
+    depth: r.depth,
+    timeLeft: Math.max(0, r.timeLeft),
+    timePercent: r.active ? Math.max(0, Math.min(100, (r.timeLeft / riftSeconds(state)) * 100)) : 0,
+    seconds: riftSeconds(state),
+    enemyHp: fmt(r.enemyHp.ceil()),
+    enemyMaxHp: fmt(maxHp.ceil()),
+    hpPercent: Math.max(0, Math.min(100, r.enemyHp.div(maxHp).toNumber() * 100)),
+    enemyFloor: riftFloorFor(r.depth),
+    legendaryDepth: RIFT.LEGENDARY_DEPTH,
+    runs: state.stats.riftsRun,
+  };
+}
+
+export function buildCurses(state: GameState) {
+  return {
+    unlocked: cursesUnlocked(state),
+    rebirthsNeeded: CURSE_UNLOCK_REBIRTHS,
+    active: activeCurses(state).map((c) => c.name),
+    list: CURSES.map((c) => ({
+      ...c,
+      bonusPercent: Math.round(c.shardBonus * 100),
+      next: state.prestige.nextCurses.includes(c.id),
+      active: state.prestige.curses.includes(c.id),
+    })),
+    nextBonusPercent: Math.round(
+      state.prestige.nextCurses.reduce((s, id) => s + (CURSES_BY_ID[id]?.shardBonus ?? 0), 0) * 100,
+    ),
+  };
+}
+
+export function buildLichdom(state: GameState) {
+  const l = state.lich;
+  const needed = darkXpForLevel(l.darkLevel);
+  return {
+    visible: lichdomVisible(state),
+    isLich: l.ascensions > 0,
+    dread: l.dread,
+    dreadEarned: l.dreadEarned,
+    ascensions: l.ascensions,
+    dreadPercent: Math.round((dreadMultiplier(state) - 1) * 100),
+    pending: pendingDread(state),
+    canAscend: canAscend(state),
+    minFloor: LICHDOM.MIN_FLOOR,
+    deepest: Math.max(state.prestige.bestFloor, state.descent.maxFloor),
+    shardsEarned: state.prestige.shardsEarned,
+    nextDreadAt: Math.ceil(400 * (pendingDread(state) + 1) ** 2),
+    darkLevel: l.darkLevel,
+    darkXp: Math.floor(l.darkXp),
+    darkNeeded: needed,
+    darkPercent: Math.min(100, (l.darkXp / needed) * 100),
+    darkBonusPercent: Math.round((darkLevelMultiplier(state) - 1) * 100),
+    powers: LICH_POWERS.map((p) => ({
+      ...p,
+      owned: hasLichPower(state, p.id),
+      affordable: canBuyLichPower(state, p.id),
+      locked: !p.requires.every((r) => hasLichPower(state, r)),
+      requiresNames: p.requires.map((r) => LICH_POWERS.find((x) => x.id === r)?.name ?? r),
+    })),
+    affordable: LICH_POWERS.filter((p) => canBuyLichPower(state, p.id)).length,
   };
 }

@@ -9,37 +9,92 @@ import { covenEffects } from './covens';
 import { eliteArmyDamage, eliteBones, eliteGuardianDamage, eliteGuardianTimer } from './elites';
 import { featMultiplier } from './feats';
 import { gearStat, hasLegendary } from './gear';
-import { burnMultiplier, slowMultiplier } from './hazards';
+import { burnMultiplier, slowMultiplier, swarmMultiplier, voidTimerMultiplier } from './hazards';
+import { curseEffects } from './curses';
+import { dreadMultiplier, lichArmyMultiplier, lichEffects } from './lichdom';
+import { riftMasteryMultiplier } from './rifts';
 import { researchProduct } from './library';
 import { spellBuffValue } from './magic';
 import { pactEffects, shardMultiplier } from './prestige';
 
 export { buffActive };
 
-/** All effects from purchased upgrades. */
-function* effects(state: GameState): Generator<Effect> {
-  for (const id of state.upgrades.purchased) {
-    const def = UPGRADES_BY_ID[id];
-    if (def) yield* def.effects;
-  }
+/** Every purchased upgrade's effects, folded into totals. */
+interface UpgradeTotals {
+  allDamage: number;
+  minion: Map<string, number>;
+  graveworks: Map<string, number>;
+  bones: number;
+  crypt: number;
+  soulFrequency: number;
+  clickFlat: number;
+  clickDpsPercent: number;
+  bossTimer: number;
 }
 
-function product(state: GameState, match: (e: Effect) => number | null): number {
-  let result = 1;
-  for (const e of effects(state)) {
-    const m = match(e);
-    if (m !== null) result *= m;
+function foldUpgrades(purchased: readonly string[]): UpgradeTotals {
+  const t: UpgradeTotals = {
+    allDamage: 1,
+    minion: new Map(),
+    graveworks: new Map(),
+    bones: 1,
+    crypt: 1,
+    soulFrequency: 1,
+    clickFlat: 0,
+    clickDpsPercent: 0,
+    bossTimer: 0,
+  };
+  for (const id of purchased) {
+    for (const e of UPGRADES_BY_ID[id]?.effects ?? ([] as readonly Effect[])) {
+      switch (e.kind) {
+        case 'allDamageMult':
+          t.allDamage *= e.mult;
+          break;
+        case 'minionMult':
+          t.minion.set(e.id, (t.minion.get(e.id) ?? 1) * e.mult);
+          break;
+        case 'graveworksMult':
+          t.graveworks.set(e.id, (t.graveworks.get(e.id) ?? 1) * e.mult);
+          break;
+        case 'bonesMult':
+          t.bones *= e.mult;
+          break;
+        case 'cryptMult':
+          t.crypt *= e.mult;
+          break;
+        case 'soulFrequency':
+          t.soulFrequency *= e.mult;
+          break;
+        case 'clickFlat':
+          t.clickFlat += e.amount;
+          break;
+        case 'clickDpsPercent':
+          t.clickDpsPercent += e.percent;
+          break;
+        case 'bossTimer':
+          t.bossTimer += e.seconds;
+          break;
+      }
+    }
   }
-  return result;
+  return t;
 }
 
-function sum(state: GameState, match: (e: Effect) => number | null): number {
-  let result = 0;
-  for (const e of effects(state)) {
-    const v = match(e);
-    if (v !== null) result += v;
-  }
-  return result;
+/**
+ * Cached per purchased-list object. Upgrades are only ever appended (or the list is replaced
+ * on Rebirth), so length plus the last id identifies the contents. The simulator's
+ * push-then-pop probing also round-trips correctly.
+ */
+const upgradeCache = new WeakMap<readonly string[], { key: string; totals: UpgradeTotals }>();
+
+function upgrades(state: GameState): UpgradeTotals {
+  const list = state.upgrades.purchased;
+  const key = `${list.length}:${list[list.length - 1] ?? ''}`;
+  const hit = upgradeCache.get(list);
+  if (hit && hit.key === key) return hit.totals;
+  const totals = foldUpgrades(list);
+  upgradeCache.set(list, { key, totals });
+  return totals;
 }
 
 const pct = (state: GameState, stat: string) => 1 + gearStat(state, stat) / 100;
@@ -61,13 +116,15 @@ export function nextMilestone(owned: number, thresholds: readonly number[]): num
  * Elites, feats, research, covens, set bonuses and buffs.
  */
 export function allDamageMultiplier(state: GameState): number {
-  let m = product(state, (e) => (e.kind === 'allDamageMult' ? e.mult : null));
+  let m = upgrades(state).allDamage;
   m *= pct(state, 'minionDamage') * shardMultiplier(state);
   m *= eliteArmyDamage(state) * featMultiplier(state) * researchProduct(state, 'minionDamage');
   m *= covenEffects(state).minionDamage ?? 1;
   m *= hasLegendary(state, 'allDamage').reduce((x, e) => x * e.mult, 1);
+  m *= lichArmyMultiplier(state) * riftMasteryMultiplier(state);
+  m *= curseEffects(state, 'damage').reduce((x, e) => x * e.mult, 1);
   if (buffActive(state, 'bloodMoon')) m *= BUFF_MULTIPLIERS.bloodMoon;
-  for (const buff of ['raiseLegion', 'bloodRite', 'plagueWind', 'rot', 'eclipse'] as const) {
+  for (const buff of ['raiseLegion', 'bloodRite', 'plagueWind', 'rot', 'eclipse', 'armyOfTheDead'] as const) {
     if (buffActive(state, buff)) m *= spellBuffValue(state, buff);
   }
   return m;
@@ -88,10 +145,11 @@ export function lowerTierBoost(state: GameState, id: string): number {
 export function minionMultiplier(state: GameState, id: string): number {
   const owned = state.army.minions[id]?.owned ?? 0;
   const milestones = 2 ** milestonesReached(owned, MINION_MILESTONES);
-  const own = product(state, (e) => (e.kind === 'minionMult' && e.id === id ? e.mult : null));
+  const own = upgrades(state).minion.get(id) ?? 1;
   const legendary = hasLegendary(state, 'minionMult').reduce((m, e) => (e.id === id ? m * e.mult : m), 1);
-  const burnImmune = MINIONS.find((m) => m.id === id)?.burnImmune === true;
-  const hazards = burnMultiplier(state, burnImmune) * slowMultiplier(state);
+  const def = MINIONS.find((m) => m.id === id);
+  const hazards =
+    burnMultiplier(state, def?.burnImmune === true) * slowMultiplier(state) * swarmMultiplier(state, def?.swarmMult);
   return (
     milestones * own * legendary * pct(state, `minion:${id}`) * lowerTierBoost(state, id) * hazards * allDamageMultiplier(state)
   );
@@ -119,8 +177,8 @@ export function guardianShred(state: GameState): number {
 
 /** Multiplier on every Bone gained from any source. */
 export function bonesMultiplier(state: GameState): number {
-  let m = product(state, (e) => (e.kind === 'bonesMult' ? e.mult : null));
-  m *= pct(state, 'bones') * eliteBones(state) * (covenEffects(state).bones ?? 1);
+  let m = upgrades(state).bones;
+  m *= pct(state, 'bones') * eliteBones(state) * (covenEffects(state).bones ?? 1) * dreadMultiplier(state);
   if (buffActive(state, 'soulFrenzy')) m *= BUFF_MULTIPLIERS.soulFrenzy;
   return m;
 }
@@ -134,14 +192,15 @@ export function depthBonus(state: GameState): number {
 export function cryptMultiplier(state: GameState): number {
   return (
     depthBonus(state) *
-    product(state, (e) => (e.kind === 'cryptMult' ? e.mult : null)) *
+    upgrades(state).crypt *
     pct(state, 'crypt') *
-    researchProduct(state, 'crypt')
+    researchProduct(state, 'crypt') *
+    curseEffects(state, 'crypt').reduce((m, e) => m * e.mult, 1)
   );
 }
 
 export function graveworksRevenueMultiplier(state: GameState, id: string, hasWarden = false): number {
-  const own = product(state, (e) => (e.kind === 'graveworksMult' && e.id === id ? e.mult : null));
+  const own = upgrades(state).graveworks.get(id) ?? 1;
   const warden = hasWarden ? hasLegendary(state, 'wardenMult').reduce((m, e) => m * e.mult, 1) : 1;
   return own * warden;
 }
@@ -154,30 +213,33 @@ export function graveworksSpeedMultiplier(state: GameState, id: string): number 
 }
 
 export function clickFlatBonus(state: GameState): number {
-  return sum(state, (e) => (e.kind === 'clickFlat' ? e.amount : null));
+  return upgrades(state).clickFlat;
 }
 
 export function clickDpsPercent(state: GameState): number {
-  return sum(state, (e) => (e.kind === 'clickDpsPercent' ? e.percent : null));
+  return upgrades(state).clickDpsPercent;
 }
 
 /** Multiplier on Siphon damage from gear, the Dark Pact, set bonuses, covens and Eclipse. */
 export function clickMultiplier(state: GameState): number {
   let m = pct(state, 'clickDamage') * pactEffects(state, 'clickMult').reduce((x, e) => x * e.mult, 1);
   m *= hasLegendary(state, 'clickMult').reduce((x, e) => x * e.mult, 1) * (covenEffects(state).click ?? 1);
+  m *= lichEffects(state, 'gaze').reduce((x, e) => x * e.click, 1);
+  if (curseEffects(state, 'noSiphon').length > 0) return 0;
   if (buffActive(state, 'eclipse')) m *= 10 * spellBuffValue(state, 'eclipse', 'click');
   return m;
 }
 
 export function bossTimerSeconds(state: GameState): number {
-  return (
+  const seconds =
     BALANCE.BOSS_TIMER_SECONDS +
-    sum(state, (e) => (e.kind === 'bossTimer' ? e.seconds : null)) +
+    curseEffects(state, 'bossTimer').reduce((s, e) => s + e.seconds, 0) +
+    upgrades(state).bossTimer +
     gearStat(state, 'bossTimer') +
     hasLegendary(state, 'bossTimer').reduce((s, e) => s + e.seconds, 0) +
     pactEffects(state, 'bossTimer').reduce((s, e) => s + e.seconds, 0) +
-    eliteGuardianTimer(state)
-  );
+    eliteGuardianTimer(state);
+  return Math.max(5, seconds * voidTimerMultiplier(state));
 }
 
 export function soulBoosted(state: GameState): boolean {
@@ -186,7 +248,7 @@ export function soulBoosted(state: GameState): boolean {
 
 export function soulFrequencyMultiplier(state: GameState): number {
   return (
-    product(state, (e) => (e.kind === 'soulFrequency' ? e.mult : null)) *
+    upgrades(state).soulFrequency *
     pct(state, 'soulFrequency') *
     pactEffects(state, 'soulFrequency').reduce((m, e) => m * e.mult, 1) *
     (soulBoosted(state) ? 2 : 1)

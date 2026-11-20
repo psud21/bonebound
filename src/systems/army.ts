@@ -4,6 +4,8 @@ import type { BuyAmount, GameState } from '../engine/state';
 import { MINIONS, MINIONS_BY_ID, type MinionDef } from '../content/minions';
 import { bossDamageMultiplier, minionMultiplier, normalDamageMultiplier } from './modifiers';
 import { researchProduct } from './library';
+import { curseEffects } from './curses';
+import { holyMultiplier } from './hazards';
 import { spendBones } from './resources';
 
 function def(id: string): MinionDef {
@@ -18,7 +20,9 @@ export function ownedCount(state: GameState, id: string): number {
 
 /** Price of a minion's first unit after research discounts. */
 function baseCost(state: GameState, id: string): number {
-  return def(id).baseCost * researchProduct(state, 'minionCost');
+  return (
+    def(id).baseCost * researchProduct(state, 'minionCost') * curseEffects(state, 'minionCost').reduce((m, e) => m * e.mult, 1)
+  );
 }
 
 /** A minion that needs a story event (the Dracolich) can't be raised before it. */
@@ -51,7 +55,9 @@ export function buyMinion(state: GameState, id: string, amount: BuyAmount): numb
 /** Damage per second of one unit with all multipliers. */
 export function unitDps(state: GameState, id: string, vsBoss = false): Decimal {
   const m = def(id);
-  const boss = vsBoss ? (m.bossDamageMult ?? 1) * bossDamageMultiplier(state) : normalDamageMultiplier(state);
+  const boss = vsBoss
+    ? (m.bossDamageMult ?? 1) * bossDamageMultiplier(state) * holyMultiplier(state, m.holyPierce === true)
+    : normalDamageMultiplier(state);
   return new Decimal(m.baseDps).mul(minionMultiplier(state, id) * boss);
 }
 
